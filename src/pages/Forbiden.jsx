@@ -1,0 +1,508 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  useTheme,
+  useMediaQuery,
+} from '@mui/material';
+
+import Container from "@mui/material/Container"
+import Typography from "@mui/material/Typography"
+import IconButton from "@mui/material/IconButton"
+import Chip from "@mui/material/Chip"
+import Fade from "@mui/material/Fade"
+import Slide from "@mui/material/Slide"
+import Box from "@mui/material/Box"
+import Paper from "@mui/material/Paper"
+import Grid from "@mui/material/Grid"
+import Zoom from "@mui/material/Zoom"
+import Button from "@mui/material/Button"
+import {
+  FaHome,
+  FaArrowLeft,
+  FaLock,
+  FaShieldAlt,
+  FaBan,
+  FaExclamationTriangle,
+  FaUserLock,
+  FaKey,
+  FaHeart
+} from 'react-icons/fa';
+
+const ForbiddenPage = () => {
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [animationStep, setAnimationStep] = useState(0);
+  const [floatingElements, setFloatingElements] = useState([]);
+
+  useEffect(() => {
+    // Staggered animation sequence
+    const timer1 = setTimeout(() => setAnimationStep(1), 300);
+    const timer2 = setTimeout(() => setAnimationStep(2), 800);
+    const timer3 = setTimeout(() => setAnimationStep(3), 1300);
+
+    // Generate floating security elements
+    const elements = Array.from({ length: 8 }, (_, i) => ({
+      id: i,
+      icon: [FaLock, FaShieldAlt, FaBan, FaUserLock, FaKey][i % 5],
+      delay: i * 200,
+      duration: 3000 + (i * 500),
+    }));
+    setFloatingElements(elements);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+    };
+  }, []);
+
+  const handleGoBack = () => {
+    navigate(-1);
+  };
+
+  const handleGoHome = () => {
+    navigate('/');
+  };
+
+  const handleLogin = () => {
+    navigate('/login');
+  };
+
+  const FloatingIcon = ({ delay, duration, style }) => (
+    <Box
+      sx={{
+        ...style,
+        position: 'absolute',
+        animation: `float ${duration}ms ease-in-out infinite`,
+        animationDelay: `${delay}ms`,
+        opacity: 0.2,
+        color: theme.palette.error.main,
+        fontSize: { xs: '1.5rem', md: '2rem' },
+        '@keyframes float': {
+          '0%, 100%': { 
+            transform: 'translateY(0px) rotate(0deg)',
+            opacity: 0.2 
+          },
+          '25%': { 
+            transform: 'translateY(-20px) rotate(90deg)',
+            opacity: 0.4 
+          },
+          '50%': { 
+            transform: 'translateY(-10px) rotate(180deg)',
+            opacity: 0.6 
+          },
+          '75%': { 
+            transform: 'translateY(-30px) rotate(270deg)',
+            opacity: 0.3 
+          },
+        }
+      }}
+    >
+      <FaLock />
+    </Box>
+  );
+
+  return (
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: `linear-gradient(135deg, 
+          ${theme.palette.error.light}15 0%, 
+          ${theme.palette.warning.light}10 25%,
+          ${theme.palette.error.main}08 50%,
+          ${theme.palette.warning.main}15 75%,
+          ${theme.palette.error.dark}20 100%)`,
+        position: 'relative',
+        overflow: 'hidden',
+        display: 'flex',
+        alignItems: 'center',
+        py: { xs: 4, md: 8 }
+      }}
+    >
+      {/* Floating Background Elements */}
+      {floatingElements.map(({ id, delay, duration }) => (
+        <FloatingIcon
+          key={id}
+          delay={delay}
+          duration={duration}
+          style={{
+            top: `${Math.random() * 80 + 10}%`,
+            left: `${Math.random() * 80 + 10}%`,
+          }}
+        />
+      ))}
+
+      {/* Background Decorative Circles */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: '10%',
+          right: '15%',
+          width: { xs: 200, md: 400 },
+          height: { xs: 200, md: 400 },
+          borderRadius: '50%',
+          background: `linear-gradient(45deg, ${theme.palette.error.main}20, ${theme.palette.warning.main}15)`,
+          filter: 'blur(100px)',
+          animation: 'pulse 4s ease-in-out infinite',
+          '@keyframes pulse': {
+            '0%, 100%': { transform: 'scale(1)' },
+            '50%': { transform: 'scale(1.1)' },
+          }
+        }}
+      />
+      
+      <Box
+        sx={{
+          position: 'absolute',
+          bottom: '20%',
+          left: '10%',
+          width: { xs: 150, md: 300 },
+          height: { xs: 150, md: 300 },
+          borderRadius: '50%',
+          background: `linear-gradient(45deg, ${theme.palette.warning.main}25, ${theme.palette.error.main}20)`,
+          filter: 'blur(80px)',
+          animation: 'pulse 3s ease-in-out infinite reverse',
+        }}
+      />
+
+      <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 2 }}>
+        <Grid container spacing={4} alignItems="center" justifyContent="center">
+          {/* Left Column - 403 Text */}
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Box textAlign={{ xs: 'center', md: 'left' }}>
+              <Fade in={true} timeout={1000}>
+                <Box position="relative" display="inline-block">
+                  <Typography
+                    variant="h1"
+                    sx={{
+                      fontSize: { xs: '8rem', sm: '12rem', md: '15rem' },
+                      fontWeight: 900,
+                      background: `linear-gradient(135deg, ${theme.palette.error.main}, ${theme.palette.warning.main})`,
+                      backgroundClip: 'text',
+                      WebkitBackgroundClip: 'text',
+                      color: 'transparent',
+                      textShadow: '0 0 50px rgba(244, 67, 54, 0.3)',
+                      lineHeight: 0.8,
+                      mb: 2,
+                      position: 'relative',
+                    }}
+                  >
+                    403
+                  </Typography>
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      fontSize: { xs: '3rem', md: '5rem' },
+                      color: theme.palette.error.main,
+                      animation: 'shake 2s ease-in-out infinite',
+                      '@keyframes shake': {
+                        '0%, 100%': { transform: 'translate(-50%, -50%) rotate(0deg)' },
+                        '25%': { transform: 'translate(-50%, -50%) rotate(-5deg)' },
+                        '75%': { transform: 'translate(-50%, -50%) rotate(5deg)' },
+                      }
+                    }}
+                  >
+                    <FaLock />
+                  </Box>
+                </Box>
+              </Fade>
+
+              <Slide in={animationStep >= 1} direction="right" timeout={800}>
+                <Box>
+                  <Typography
+                    variant={isMobile ? "h4" : "h3"}
+                    sx={{
+                      fontWeight: 700,
+                      color: theme.palette.text.primary,
+                      mb: 2,
+                      textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    }}
+                  >
+                    Accès Interdit
+                  </Typography>
+                  
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      color: theme.palette.text.secondary,
+                      mb: 4,
+                      maxWidth: 400,
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    Désolé, vous n'avez pas les permissions nécessaires pour accéder à cette page. 
+                    Cette zone est réservée aux administrateurs.
+                  </Typography>
+
+                  {/* Warning Stats */}
+                  <Box display="flex" gap={2} mb={4} flexWrap="wrap">
+                    <Chip
+                      icon={<FaShieldAlt />}
+                      label="Zone protégée"
+                      variant="outlined"
+                      color="error"
+                      sx={{
+                        fontWeight: 600,
+                        '&:hover': { transform: 'scale(1.05)' },
+                        transition: 'transform 0.2s ease'
+                      }}
+                    />
+                    <Chip
+                      icon={<FaUserLock />}
+                      label="Admin uniquement"
+                      variant="outlined"
+                      color="warning"
+                      sx={{
+                        fontWeight: 600,
+                        '&:hover': { transform: 'scale(1.05)' },
+                        transition: 'transform 0.2s ease'
+                      }}
+                    />
+                  </Box>
+                </Box>
+              </Slide>
+            </Box>
+          </Grid>
+
+          {/* Right Column - Actions */}
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Zoom in={animationStep >= 2} timeout={1000}>
+              <Paper
+                elevation={20}
+                sx={{
+                  p: { xs: 3, md: 4 },
+                  borderRadius: 4,
+                  background: 'rgba(255, 255, 255, 0.95)',
+                  backdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  boxShadow: '0 20px 60px rgba(0, 0, 0, 0.1)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 4,
+                    background: `linear-gradient(90deg, ${theme.palette.error.main}, ${theme.palette.warning.main})`,
+                  }
+                }}
+              >
+                <Box textAlign="center" mb={3}>
+                  <Box
+                    sx={{
+                      display: 'inline-flex',
+                      p: 3,
+                      borderRadius: '50%',
+                      bgcolor: `${theme.palette.error.main}10`,
+                      mb: 2
+                    }}
+                  >
+                    <FaExclamationTriangle size={48} color={theme.palette.error.main} />
+                  </Box>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontWeight: 700,
+                      color: theme.palette.text.primary,
+                    }}
+                  >
+                    Permissions Insuffisantes
+                  </Typography>
+                </Box>
+
+                <Box display="flex" flexDirection="column" gap={2}>
+                  <Button
+                    variant="contained"
+                    size="large"
+                    startIcon={<FaKey />}
+                    onClick={handleLogin}
+                    fullWidth
+                    color="error"
+                    sx={{
+                      py: 2,
+                      borderRadius: 3,
+                      fontWeight: 600,
+                      fontSize: '1.1rem',
+                      textTransform: 'none',
+                      boxShadow: '0 8px 24px rgba(244, 67, 54, 0.3)',
+                      '&:hover': {
+                        transform: 'translateY(-3px)',
+                        boxShadow: '0 12px 30px rgba(244, 67, 54, 0.4)',
+                      },
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    Se connecter en tant qu'admin
+                  </Button>
+
+                  <Button
+                    variant="outlined"
+                    size="large"
+                    startIcon={<FaHome />}
+                    onClick={handleGoHome}
+                    fullWidth
+                    sx={{
+                      py: 2,
+                      borderRadius: 3,
+                      borderWidth: 2,
+                      fontWeight: 600,
+                      fontSize: '1.1rem',
+                      textTransform: 'none',
+                      '&:hover': {
+                        borderWidth: 2,
+                        transform: 'translateY(-3px)',
+                        boxShadow: `0 12px 30px ${theme.palette.primary.main}20`,
+                      },
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    Retour à l'accueil
+                  </Button>
+
+                  <Button
+                    variant="text"
+                    size="large"
+                    startIcon={<FaArrowLeft />}
+                    onClick={handleGoBack}
+                    fullWidth
+                    sx={{
+                      py: 2,
+                      borderRadius: 3,
+                      fontWeight: 600,
+                      fontSize: '1.1rem',
+                      textTransform: 'none',
+                      color: theme.palette.text.secondary,
+                      '&:hover': {
+                        bgcolor: `${theme.palette.error.main}10`,
+                        transform: 'translateY(-2px)',
+                      },
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    Retour à la page précédente
+                  </Button>
+                </Box>
+
+                {/* Security Info */}
+                <Slide in={animationStep >= 3} direction="up" timeout={800}>
+                  <Box mt={4}>
+                    <Paper
+                      sx={{
+                        p: 2,
+                        bgcolor: `${theme.palette.warning.main}10`,
+                        border: `1px solid ${theme.palette.warning.main}30`,
+                        borderRadius: 2
+                      }}
+                    >
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: theme.palette.text.secondary,
+                          textAlign: 'center',
+                          fontWeight: 500,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 1
+                        }}
+                      >
+                        <FaShieldAlt color={theme.palette.warning.main} />
+                        Cette page nécessite des droits d'administrateur
+                      </Typography>
+                    </Paper>
+                    
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: theme.palette.text.secondary,
+                        mt: 3,
+                        textAlign: 'center',
+                        fontWeight: 500
+                      }}
+                    >
+                      Liens utiles
+                    </Typography>
+                    <Box display="flex" justifyContent="center" gap={1} flexWrap="wrap" mt={1}>
+                      {[
+                        { label: 'Support', path: '/contact' },
+                        { label: 'FAQ', path: '/faq' },
+                        { label: 'À propos', path: '/about' },
+                      ].map((link) => (
+                        <Chip
+                          key={link.label}
+                          label={link.label}
+                          onClick={() => navigate(link.path)}
+                          clickable
+                          size="small"
+                          sx={{
+                            fontWeight: 500,
+                            '&:hover': {
+                              bgcolor: `${theme.palette.primary.main}20`,
+                              transform: 'scale(1.05)',
+                            },
+                            transition: 'all 0.2s ease'
+                          }}
+                        />
+                      ))}
+                    </Box>
+                  </Box>
+                </Slide>
+              </Paper>
+            </Zoom>
+          </Grid>
+        </Grid>
+
+        {/* Bottom Message */}
+        <Fade in={animationStep >= 3} timeout={1000}>
+          <Box
+            textAlign="center"
+            mt={6}
+            sx={{
+              p: 3,
+              borderRadius: 3,
+              background: 'rgba(255, 255, 255, 0.1)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+            }}
+          >
+            <Typography
+              variant="body1"
+              sx={{
+                color: theme.palette.text.secondary,
+                fontStyle: 'italic',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 1,
+                flexWrap: 'wrap'
+              }}
+            >
+              Vous pensez qu'il s'agit d'une erreur ? Contactez notre support
+              <IconButton
+                size="small"
+                sx={{
+                  color: theme.palette.error.main,
+                  animation: 'heartbeat 1.5s ease-in-out infinite',
+                  '@keyframes heartbeat': {
+                    '0%, 100%': { transform: 'scale(1)' },
+                    '50%': { transform: 'scale(1.1)' },
+                  }
+                }}
+              >
+                <FaHeart />
+              </IconButton>
+            </Typography>
+          </Box>
+        </Fade>
+      </Container>
+    </Box>
+  );
+};
+
+export default ForbiddenPage;
