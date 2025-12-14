@@ -9,15 +9,7 @@ import {
     Button,
     Chip,
     Divider,
-    Card,
-    CardContent,
     IconButton,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    TextField,
-    Alert,
     Breadcrumbs,
     Link,
     Avatar,
@@ -39,13 +31,15 @@ import {
     FaHeart,
     FaHeartBroken,
     FaCheck,
-    FaClock,
     FaTag,
     FaChartLine,
     FaUsers,
     FaTools
 } from 'react-icons/fa';
 import { useBusinessBySlug } from './services/homes.services';
+import { useSendMessage } from '../features/services/Messages.services';
+import useToast from '../components/Toast.components';
+import { InquiryDialog } from './services/DialogContact.services';
 
 export function BusinessDetailPage() {
     const { id } = useParams();
@@ -53,43 +47,60 @@ export function BusinessDetailPage() {
     const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
     const [showInquiryDialog, setShowInquiryDialog] = useState(false);
     const [isFavorite, setIsFavorite] = useState(false);
-    const [inquiryForm, setInquiryForm] = useState({
-        name: '',
-        email: '',
-        phone: '',
-        message: ''
-    });
-    const [inquirySubmitted, setInquirySubmitted] = useState(false);
-
+    const { showToast, ToastComponent } = useToast()
+   
     // Fetch data with React Query
     const { data: business, isLoading, isError } = useBusinessBySlug(id);
+    
+    // Initialize the mutation hook - THIS IS THE FIX
+   const sendMessageMutation = useSendMessage({
+        onSuccess: (result) => {
+            showToast({
+                title: "Succès",
+                description: result.message || "Votre message a été envoyé avec succès!",
+                status: "success"
+            });
+            setShowInquiryDialog(false);
+        },
+        onError: (error) => {
+            const errorMessage = error.response?.data?.message || 
+                "Une erreur est survenue lors de l'envoi du message.";
+            showToast({
+                title: "Erreur",
+                description: errorMessage,
+                status: "error"
+            });
+        }
+    });
+    // Handle inquiry submission
+    const handleInquirySubmit = async (payload) => {
+        try {
+            console.log('Submitting inquiry from detail page:', payload);
+            await sendMessageMutation.mutateAsync(payload);
+        } catch (error) {
+            console.error('Failed to send message:', error);
+            throw error; // Re-throw to let InquiryDialog handle it
+        }
+    };
 
     // Combine photos and videos into a single media array
     const allMedia = React.useMemo(() => {
         if (!business) return [];
-        
+
         const photos = (business.photos || []).map(url => ({
             type: 'photo',
             url: url
         }));
-        
+
         const videos = (business.videos || []).map(url => ({
             type: 'video',
             url: url
         }));
-        
+
         return [...photos, ...videos];
     }, [business]);
 
-    const handleInquirySubmit = () => {
-        console.log('Inquiry submitted:', inquiryForm);
-        setInquirySubmitted(true);
-        setTimeout(() => {
-            setShowInquiryDialog(false);
-            setInquirySubmitted(false);
-            setInquiryForm({ name: '', email: '', phone: '', message: '' });
-        }, 2000);
-    };
+
 
     const formatPrice = (price) => {
         return new Intl.NumberFormat('fr-FR', {
@@ -199,7 +210,7 @@ export function BusinessDetailPage() {
 
             <Grid container spacing={4}>
                 {/* Left Column - Images and Description */}
-                <Grid size={{md:8,xs:12}}>
+                <Grid size={{ md: 8, xs: 12 }}>
                     {/* Media Gallery */}
                     {allMedia.length > 0 && (
                         <Paper elevation={2} sx={{ mb: 4, overflow: 'hidden' }}>
@@ -229,7 +240,7 @@ export function BusinessDetailPage() {
                                         }}
                                     />
                                 )}
-                                
+
                                 {/* Media Type Indicator */}
                                 <Chip
                                     label={allMedia[currentMediaIndex]?.type === 'video' ? 'Vidéo' : 'Photo'}
@@ -246,7 +257,7 @@ export function BusinessDetailPage() {
                                         }
                                     }}
                                 />
-                                
+
                                 {/* Media Counter */}
                                 <Box
                                     sx={{
@@ -264,14 +275,14 @@ export function BusinessDetailPage() {
                                     {currentMediaIndex + 1} / {allMedia.length}
                                 </Box>
                             </Box>
-                            
+
                             {/* Thumbnails */}
                             {allMedia.length > 1 && (
-                                <Box 
-                                    display="flex" 
-                                    gap={1} 
-                                    p={2} 
-                                    sx={{ 
+                                <Box
+                                    display="flex"
+                                    gap={1}
+                                    p={2}
+                                    sx={{
                                         overflowX: 'auto',
                                         '&::-webkit-scrollbar': {
                                             height: 6,
@@ -363,12 +374,12 @@ export function BusinessDetailPage() {
                                     ))}
                                 </Box>
                             )}
-                            
+
                             {/* Media Type Summary */}
                             <Box sx={{ px: 2, pb: 2 }}>
                                 <Typography variant="caption" color="text.secondary">
                                     {business.photos?.length || 0} photo{(business.photos?.length || 0) !== 1 ? 's' : ''}
-                                    {business.videos?.length > 0 && 
+                                    {business.videos?.length > 0 &&
                                         ` • ${business.videos.length} vidéo${business.videos.length !== 1 ? 's' : ''}`
                                     }
                                 </Typography>
@@ -460,14 +471,14 @@ export function BusinessDetailPage() {
                 </Grid>
 
                 {/* Right Column - Contact Info */}
-                <Grid size={{md:4,xs:12}}>
+                <Grid size={{ md: 4, xs: 12 }}>
 
                     {/* Contact Card */}
                     <Paper elevation={2} sx={{ p: 3, mb: 3, position: 'sticky', top: 20 }}>
                         <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
                             Contacter le vendeur
                         </Typography>
-                        
+
                         <Box display="flex" alignItems="center" gap={2} mb={3}>
                             <Avatar sx={{ bgcolor: 'success.main' }}>
                                 <FaUser />
@@ -591,100 +602,17 @@ export function BusinessDetailPage() {
                 </Button>
             </Box>
 
-            {/* Inquiry Dialog */}
-            <Dialog
+           <InquiryDialog
                 open={showInquiryDialog}
                 onClose={() => setShowInquiryDialog(false)}
-                maxWidth="sm"
-                fullWidth
-            >
-                <DialogTitle>
-                    Contacter {business.owner?.name || business.contactName}
-                </DialogTitle>
-                <DialogContent>
-                    {inquirySubmitted ? (
-                        <Alert severity="success" sx={{ mb: 2 }}>
-                            Votre message a été envoyé avec succès !
-                        </Alert>
-                    ) : (
-                        <>
-                            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                                Envoyez un message concernant: <strong>{business.name}</strong>
-                            </Typography>
-                            <Grid container spacing={2}>
-                                <Grid item xs={12} sm={12} md={6}>
-                                    <TextField
-                                        fullWidth
-                                        label="Nom complet"
-                                        value={inquiryForm.name}
-                                        onChange={(e) => setInquiryForm({
-                                            ...inquiryForm,
-                                            name: e.target.value
-                                        })}
-                                        required
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={12} md={6}>
-                                    <TextField
-                                        fullWidth
-                                        label="Téléphone"
-                                        value={inquiryForm.phone}
-                                        onChange={(e) => setInquiryForm({
-                                            ...inquiryForm,
-                                            phone: e.target.value
-                                        })}
-                                        required
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={12} md={12}>
-                                    <TextField
-                                        fullWidth
-                                        label="Email"
-                                        type="email"
-                                        value={inquiryForm.email}
-                                        onChange={(e) => setInquiryForm({
-                                            ...inquiryForm,
-                                            email: e.target.value
-                                        })}
-                                        required
-                                    />
-                                </Grid>
-                                <Grid item xs={12} sm={12} md={12}>
-                                    <TextField
-                                        fullWidth
-                                        label="Votre message"
-                                        multiline
-                                        rows={4}
-                                        value={inquiryForm.message}
-                                        onChange={(e) => setInquiryForm({
-                                            ...inquiryForm,
-                                            message: e.target.value
-                                        })}
-                                        placeholder="Décrivez votre intérêt pour cette entreprise..."
-                                        required
-                                    />
-                                </Grid>
-                            </Grid>
-                        </>
-                    )}
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setShowInquiryDialog(false)}>
-                        Annuler
-                    </Button>
-                    <Button
-                        variant="contained"
-                        onClick={handleInquirySubmit}
-                        disabled={inquirySubmitted}
-                        sx={{
-                            bgcolor: 'success.main',
-                            '&:hover': { bgcolor: 'success.dark' }
-                        }}
-                    >
-                        Envoyer le message
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                business={business}
+                onSubmit={handleInquirySubmit}
+                isSubmitting={sendMessageMutation.isPending}
+            />
+            {/* Toast Notification */ 
+            ToastComponent
+            
+            }
         </Container>
     );
 }

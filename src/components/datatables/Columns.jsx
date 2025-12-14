@@ -1,6 +1,8 @@
 import { Box, IconButton, Chip, Avatar, Tooltip, Stack } from '@mui/material';
-import { FaEdit, FaTrash, FaEye, FaUserCheck, FaUserTimes } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaUserCheck, FaUserTimes, FaUser, FaEnvelope, FaPhone, FaReply } from 'react-icons/fa';
 import { styled } from '@mui/system';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 // Status configuration
 const statusConfig = {
   pending: {
@@ -27,7 +29,26 @@ const statusConfig = {
     bgColor: 'rgba(139, 92, 246, 0.08)',
     borderColor: 'rgba(139, 92, 246, 0.2)',
   },
+  new: {
+    label: 'Nouveau',
+    color: '#ef4444',
+    bgColor: 'rgba(239, 68, 68, 0.08)',
+    borderColor: 'rgba(239, 68, 68, 0.2)',
+  },
+  read: {
+    label: 'Lu',
+    color: '#f59e0b',
+    bgColor: 'rgba(245, 158, 11, 0.08)',
+    borderColor: 'rgba(245, 158, 11, 0.2)',
+  },
+  replied: {
+    label: 'Répondu',
+    color: '#10b981',
+    bgColor: 'rgba(16, 185, 129, 0.08)',
+    borderColor: 'rgba(16, 185, 129, 0.2)',
+  },
 };
+
 // Styled Components for Actions
 const ActionButton = styled(IconButton)(({ color = 'default' }) => {
   const colorMap = {
@@ -259,6 +280,174 @@ export const BusinessListingColumns = (actions) => [
           <Tooltip title="Modifier" arrow>
             <ActionButton color="edit" onClick={() => actions.onEdit(row)} aria-label="edit">
               <FaEdit size={14} />
+            </ActionButton>
+          </Tooltip>
+        )}
+        {actions?.onDelete && (
+          <Tooltip title="Supprimer" arrow>
+            <ActionButton color="delete" onClick={() => actions.onDelete(row)} aria-label="delete">
+              <FaTrash size={14} />
+            </ActionButton>
+          </Tooltip>
+        )}
+      </Stack>
+    ),
+  },
+];
+
+// Format date helper
+const formatDate = (date) => {
+  if (!date) return '—';
+  try {
+    return format(new Date(date), 'dd MMM yyyy HH:mm', { locale: fr });
+  } catch {
+    return '—';
+  }
+};
+
+// Message Columns
+export const MessageColumns = (actions) => [
+  {
+    name: 'Statut',
+    selector: (row) => row.status,
+    sortable: true,
+    width: '130px',
+    cell: (row) => {
+      const status = row.status?.toLowerCase() || 'new';
+      const config = statusConfig[status] || statusConfig.new;
+      
+      return (
+        <Chip
+          label={config.label}
+          size="small"
+          sx={{
+            fontWeight: 700,
+            bgcolor: config.bgColor,
+            color: config.color,
+            border: `1px solid ${config.borderColor}`,
+            fontSize: '12px',
+          }}
+        />
+      );
+    },
+  },
+  {
+    name: 'Expéditeur',
+    selector: (row) => row.sender_name,
+    sortable: true,
+    minWidth: '220px',
+    cell: (row) => (
+      <Box>
+        <Box 
+          display="flex" 
+          alignItems="center" 
+          gap={1} 
+          sx={{ 
+            fontWeight: row.status === 'new' ? 700 : 600, 
+            color: '#0f172a',
+            mb: 0.5 
+          }}
+        >
+          <FaUser size={12} color="#64748b" />
+          {row.sender_name}
+        </Box>
+        <Box sx={{ fontSize: '12px', color: '#64748b' }}>
+          <FaEnvelope size={10} style={{ marginRight: 4 }} />
+          {row.sender_email}
+        </Box>
+        <Box sx={{ fontSize: '12px', color: '#94a3b8' }}>
+          <FaPhone size={10} style={{ marginRight: 4 }} />
+          {row.sender_phone}
+        </Box>
+      </Box>
+    ),
+  },
+  {
+    name: 'Entreprise',
+    selector: (row) => row.business?.name,
+    sortable: true,
+    minWidth: '200px',
+    cell: (row) => (
+      <Box>
+        <Box sx={{ fontWeight: 600, color: '#0f172a', mb: 0.3 }}>
+          {row.business?.name || '—'}
+        </Box>
+        <Box sx={{ fontSize: '12px', color: '#64748b' }}>
+          N° {row.business?.business_number || '—'}
+        </Box>
+      </Box>
+    ),
+  },
+  {
+    name: 'Message',
+    selector: (row) => row.message,
+    sortable: false,
+    minWidth: '300px',
+    cell: (row) => (
+      <Box
+        sx={{
+          fontSize: '13px',
+          color: '#334155',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          maxWidth: '280px',
+        }}
+        title={row.message}
+      >
+        {row.message}
+      </Box>
+    ),
+  },
+  {
+    name: 'Date de réception',
+    selector: (row) => row.created_at,
+    sortable: true,
+    width: '160px',
+    cell: (row) => (
+      <Box sx={{ color: '#64748b', fontSize: '13px' }}>
+        {formatDate(row.created_at)}
+      </Box>
+    ),
+  },
+  {
+    name: 'Lu le',
+    selector: (row) => row.read_at,
+    sortable: true,
+    width: '160px',
+    cell: (row) => (
+      <Box sx={{ color: '#64748b', fontSize: '13px' }}>
+        {row.read_at ? formatDate(row.read_at) : '—'}
+      </Box>
+    ),
+  },
+  {
+    name: 'Répondu le',
+    selector: (row) => row.replied_at,
+    sortable: true,
+    width: '160px',
+    cell: (row) => (
+      <Box sx={{ color: '#64748b', fontSize: '13px' }}>
+        {row.replied_at ? formatDate(row.replied_at) : '—'}
+      </Box>
+    ),
+  },
+  {
+    name: 'Actions',
+    width: '180px',
+    cell: (row) => (
+      <Stack direction="row" spacing={1}>
+        {actions?.onView && (
+          <Tooltip title="Voir les détails" arrow>
+            <ActionButton color="view" onClick={() => actions.onView(row)} aria-label="view">
+              <FaEye size={14} />
+            </ActionButton>
+          </Tooltip>
+        )}
+        {row.status !== 'replied' && actions?.onMarkAsReplied && (
+          <Tooltip title="Marquer comme répondu" arrow>
+            <ActionButton color="reply" onClick={() => actions.onMarkAsReplied(row)} aria-label="reply">
+              <FaReply size={14} />
             </ActionButton>
           </Tooltip>
         )}

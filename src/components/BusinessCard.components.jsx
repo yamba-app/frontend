@@ -1,3 +1,4 @@
+// src/components/BusinessCard.jsx
 import React, { useState } from 'react';
 import {
     Card,
@@ -6,23 +7,14 @@ import {
     Box,
     Button,
     Chip,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    TextField,
-    Grid,
     IconButton,
-    Alert,
-    Divider
+    Divider,
+    Stack
 } from '@mui/material';
 import {
     MdLocationOn as MapPinIcon,
     MdCalendarToday as CalendarIcon,
-    MdAttachMoney as DollarSignIcon,
     MdInfo as InfoIcon,
-    MdClose as CloseIcon,
-    MdSend as SendIcon,
     MdVisibility as EyeIcon,
     MdFavorite as HeartIcon,
     MdShare as ShareIcon,
@@ -31,20 +23,38 @@ import {
     MdPeople as PeopleIcon,
     MdTrendingUp as TrendingUpIcon
 } from 'react-icons/md';
+import { useSendMessage } from '../features/services/Messages.services';
+import useToast from './Toast.components';
+import { InquiryDialog } from '../pages/services/DialogContact.services';
 
-export function BusinessCard({ business, onClick, onAddInquiry }) {
-    const [showInquiryForm, setShowInquiryForm] = useState(false);
-    const [inquirySubmitted, setInquirySubmitted] = useState(false);
-    const [inquiryData, setInquiryData] = useState({
-        name: '',
-        phone: '',
-        email: '',
-        message: ''
+export function BusinessCard({ business, onClick }) {
+    const [showInquiryDialog, setShowInquiryDialog] = useState(false);
+    const { showToast, ToastComponent } = useToast();
+
+    // Initialize the mutation hook
+    const sendMessageMutation = useSendMessage({
+        onSuccess: (result) => {
+            showToast({
+                title: "Succès",
+                description: result.message || "Votre message a été envoyé avec succès!",
+                status: "success"
+            });
+            setShowInquiryDialog(false);
+        },
+        onError: (error) => {
+            const errorMessage = error.response?.data?.message || 
+                "Une erreur est survenue lors de l'envoi du message.";
+            showToast({
+                title: "Erreur",
+                description: errorMessage,
+                status: "error"
+            });
+        }
     });
 
     const handleCardClick = () => {
         if (onClick) {
-            onClick(business.id);
+            onClick(business.slug || business.id);
         }
     };
 
@@ -52,34 +62,13 @@ export function BusinessCard({ business, onClick, onAddInquiry }) {
         e.stopPropagation();
     };
 
-    const handleInquirySubmit = (e) => {
-        e.preventDefault();
-
-        const inquiryWithBusinessInfo = {
-            ...inquiryData,
-            businessId: business.id,
-            businessName: business.name,
-            businessNumber: business.business_number
-        };
-
-        if (onAddInquiry) {
-            onAddInquiry(inquiryWithBusinessInfo);
+    const handleInquirySubmit = async (payload) => {
+        try {
+            await sendMessageMutation.mutateAsync(payload);
+        } catch (error) {
+            console.error('Failed to send message:', error);
+            throw error; // Re-throw to let InquiryDialog handle it
         }
-        
-        setInquirySubmitted(true);
-        
-        setTimeout(() => {
-            setInquiryData({ name: '', phone: '', email: '', message: '' });
-            setShowInquiryForm(false);
-            setInquirySubmitted(false);
-        }, 2000);
-    };
-
-    const handleInquiryChange = (e) => {
-        setInquiryData({
-            ...inquiryData,
-            [e.target.name]: e.target.value
-        });
     };
 
     const formatPrice = (price) => {
@@ -100,10 +89,10 @@ export function BusinessCard({ business, onClick, onAddInquiry }) {
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
         const date = new Date(dateString);
-        return date.toLocaleDateString('fr-FR', { 
-            year: 'numeric', 
-            month: 'short', 
-            day: 'numeric' 
+        return date.toLocaleDateString('fr-FR', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
         });
     };
 
@@ -117,15 +106,25 @@ export function BusinessCard({ business, onClick, onAddInquiry }) {
                     flexDirection: 'column',
                     cursor: onClick ? 'pointer' : 'default',
                     transition: 'all 0.3s ease-in-out',
+                    position: 'relative',
                     '&:hover': {
-                        elevation: 6,
-                        transform: onClick ? 'translateY(-6px)' : 'translateY(-2px)',
-                        boxShadow: '0 12px 30px rgba(46, 125, 50, 0.2)',
+                        elevation: 8,
+                        transform: onClick ? 'translateY(-8px)' : 'translateY(-4px)',
+                        boxShadow: '0 16px 40px rgba(46, 125, 50, 0.25)',
                     },
                     borderRadius: 2,
                     overflow: 'hidden',
                     border: '1px solid',
-                    borderColor: 'divider'
+                    borderColor: 'divider',
+                    '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: '4px',
+                        background: 'linear-gradient(90deg, #2e7d32 0%, #66bb6a 100%)',
+                    }
                 }}
                 onClick={handleCardClick}
             >
@@ -133,11 +132,11 @@ export function BusinessCard({ business, onClick, onAddInquiry }) {
                     {/* Header Section */}
                     <Box sx={{ mb: 2 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
-                            <Typography 
-                                variant="h6" 
-                                component="h3" 
-                                sx={{ 
-                                    fontWeight: 'bold', 
+                            <Typography
+                                variant="h6"
+                                component="h3"
+                                sx={{
+                                    fontWeight: 'bold',
                                     flex: 1,
                                     lineHeight: 1.3,
                                     minHeight: '2.6em',
@@ -151,30 +150,30 @@ export function BusinessCard({ business, onClick, onAddInquiry }) {
                                 {business.name}
                             </Typography>
                             <Box sx={{ ml: 1, flexShrink: 0 }}>
-                               <Chip
-                            icon={<BusinessIcon style={{ fontSize: 14 }} />}
-                            label={business.businessNumber}
-                            size="small"
-                            variant="outlined"
-                            color="primary"
-                            sx={{ mb: 1.5, fontWeight: 500 }}
-                        />
+                                <Chip
+                                    icon={<BusinessIcon style={{ fontSize: 14 }} />}
+                                    label={business.business_number}
+                                    size="small"
+                                    variant="outlined"
+                                    color="primary"
+                                    sx={{ fontWeight: 500 }}
+                                />
                             </Box>
                         </Box>
 
-
                         {/* Price - Prominent Display */}
-                        <Box 
-                            sx={{ 
-                                p: 2, 
-                                bgcolor: 'success.light', 
+                        <Box
+                            sx={{
+                                p: 2,
+                                bgcolor: 'success.light',
                                 borderRadius: 1.5,
                                 mb: 2,
-                                border: '1px solid',
-                                borderColor: 'success.main'
+                                border: '2px solid',
+                                borderColor: 'success.main',
+                                background: 'linear-gradient(135deg, rgba(46, 125, 50, 0.1) 0%, rgba(46, 125, 50, 0.05) 100%)',
                             }}
                         >
-                            <Typography variant="caption" color="success.dark" sx={{ fontWeight: 500, display: 'block', mb: 0.5 }}>
+                            <Typography variant="caption" color="success.dark" sx={{ fontWeight: 600, display: 'block', mb: 0.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                                 Prix demandé
                             </Typography>
                             <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'success.dark' }}>
@@ -183,53 +182,54 @@ export function BusinessCard({ business, onClick, onAddInquiry }) {
                         </Box>
 
                         {/* Key Details in Grid */}
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, mb: 2 }}>
+                        <Stack spacing={1} sx={{ mb: 2 }}>
                             {/* Location */}
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <MapPinIcon style={{ marginRight: 6, color: '#4caf50', fontSize: 18, flexShrink: 0 }} />
-                                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                                <MapPinIcon style={{ marginRight: 8, color: '#4caf50', fontSize: 18, flexShrink: 0 }} />
+                                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem', fontWeight: 500 }}>
                                     {business.location}
                                 </Typography>
                             </Box>
 
                             {/* Category */}
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <CategoryIcon style={{ marginRight: 6, color: '#4caf50', fontSize: 18, flexShrink: 0 }} />
-                                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                                <CategoryIcon style={{ marginRight: 8, color: '#4caf50', fontSize: 18, flexShrink: 0 }} />
+                                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem', fontWeight: 500 }}>
                                     {business.category}
                                 </Typography>
                             </Box>
 
-                            {/* Year Established */}
-                            {business.yearEstablished && (
-                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <CalendarIcon style={{ marginRight: 6, color: '#4caf50', fontSize: 18, flexShrink: 0 }} />
-                                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-                                        Créée en {business.yearEstablished}
-                                    </Typography>
-                                </Box>
-                            )}
+                            {/* Year Established & Employees */}
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                {business.year_established && (
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <CalendarIcon style={{ marginRight: 6, color: '#4caf50', fontSize: 18, flexShrink: 0 }} />
+                                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                                            {business.year_established}
+                                        </Typography>
+                                    </Box>
+                                )}
 
-                            {/* Employees */}
-                            {business.employees && (
-                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <PeopleIcon style={{ marginRight: 6, color: '#4caf50', fontSize: 18, flexShrink: 0 }} />
-                                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-                                        {business.employees} employés
-                                    </Typography>
-                                </Box>
-                            )}
-                        </Box>
+                                {business.employees && (
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <PeopleIcon style={{ marginRight: 6, color: '#4caf50', fontSize: 18, flexShrink: 0 }} />
+                                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                                            {business.employees} employés
+                                        </Typography>
+                                    </Box>
+                                )}
+                            </Box>
+                        </Stack>
                     </Box>
 
                     <Divider sx={{ my: 1.5 }} />
 
                     {/* Description */}
-                    <Typography 
-                        variant="body2" 
-                        color="text.secondary" 
-                        sx={{ 
-                            mb: 2, 
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{
+                            mb: 2,
                             lineHeight: 1.6,
                             minHeight: '4.8em',
                             display: '-webkit-box',
@@ -243,11 +243,11 @@ export function BusinessCard({ business, onClick, onAddInquiry }) {
 
                     {/* Monthly Revenue */}
                     {business.monthly_revenue && (
-                        <Box 
-                            sx={{ 
-                                mb: 2, 
-                                p: 1.5, 
-                                bgcolor: 'grey.50', 
+                        <Box
+                            sx={{
+                                mb: 2,
+                                p: 1.5,
+                                bgcolor: 'grey.50',
                                 borderRadius: 1,
                                 border: '1px solid',
                                 borderColor: 'grey.200'
@@ -272,7 +272,7 @@ export function BusinessCard({ business, onClick, onAddInquiry }) {
                                 label={`${business.photos?.length || 0} photo(s) • ${business.videos?.length || 0} vidéo(s)`}
                                 size="small"
                                 variant="outlined"
-                                sx={{ fontSize: '0.7rem' }}
+                                sx={{ fontSize: '0.7rem', borderColor: 'success.main', color: 'success.dark' }}
                             />
                         </Box>
                     )}
@@ -284,33 +284,35 @@ export function BusinessCard({ business, onClick, onAddInquiry }) {
                     <Box sx={{ borderTop: 1, borderColor: 'divider', pt: 2, mt: 2 }} onClick={handleActionClick}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <CalendarIcon style={{ marginRight: 6, fontSize: 14, color: '#666' }} />
+                                <CalendarIcon style={{ marginRight: 6, fontSize: 14, color: '#999' }} />
                                 <Typography variant="caption" color="text.secondary">
                                     {formatDate(business.created_at)}
                                 </Typography>
                             </Box>
                             <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                <IconButton 
+                                <IconButton
                                     size="small"
-                                    sx={{ 
+                                    sx={{
                                         color: 'text.secondary',
-                                        '&:hover': { 
+                                        transition: 'all 0.2s ease',
+                                        '&:hover': {
                                             color: 'error.main',
                                             bgcolor: 'error.light',
-                                            transform: 'scale(1.1)'
+                                            transform: 'scale(1.15)'
                                         }
                                     }}
                                 >
                                     <HeartIcon fontSize="small" />
                                 </IconButton>
-                                <IconButton 
+                                <IconButton
                                     size="small"
-                                    sx={{ 
+                                    sx={{
                                         color: 'text.secondary',
-                                        '&:hover': { 
+                                        transition: 'all 0.2s ease',
+                                        '&:hover': {
                                             color: 'primary.main',
                                             bgcolor: 'primary.light',
-                                            transform: 'scale(1.1)'
+                                            transform: 'scale(1.15)'
                                         }
                                     }}
                                 >
@@ -331,9 +333,10 @@ export function BusinessCard({ business, onClick, onAddInquiry }) {
                                     startIcon={<EyeIcon />}
                                     sx={{
                                         flex: 1,
+                                        transition: 'all 0.2s ease',
                                         '&:hover': {
-                                            transform: 'translateY(-1px)',
-                                            boxShadow: 3
+                                            transform: 'translateY(-2px)',
+                                            boxShadow: '0 6px 20px rgba(46, 125, 50, 0.3)'
                                         },
                                         fontWeight: 600,
                                         textTransform: 'none'
@@ -348,7 +351,7 @@ export function BusinessCard({ business, onClick, onAddInquiry }) {
                                 size="medium"
                                 onClick={(e) => {
                                     handleActionClick(e);
-                                    setShowInquiryForm(true);
+                                    setShowInquiryDialog(true);
                                 }}
                                 startIcon={<InfoIcon />}
                                 sx={{
@@ -356,9 +359,10 @@ export function BusinessCard({ business, onClick, onAddInquiry }) {
                                     minWidth: onClick ? '120px' : 'auto',
                                     fontWeight: 600,
                                     textTransform: 'none',
+                                    transition: 'all 0.2s ease',
                                     '&:hover': {
-                                        transform: 'translateY(-1px)',
-                                        boxShadow: 2
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: '0 4px 16px rgba(46, 125, 50, 0.2)'
                                     }
                                 }}
                             >
@@ -369,111 +373,17 @@ export function BusinessCard({ business, onClick, onAddInquiry }) {
                 </CardContent>
             </Card>
 
-            {/* Inquiry Form Dialog */}
-            <Dialog
-                open={showInquiryForm}
-                onClose={() => setShowInquiryForm(false)}
-                maxWidth="sm"
-                fullWidth
-                onClick={handleActionClick}
-            >
-                <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    Demande d'information
-                    <IconButton onClick={() => setShowInquiryForm(false)} sx={{ ml: 'auto' }}>
-                        <CloseIcon />
-                    </IconButton>
-                </DialogTitle>
+            {/* Inquiry Dialog */}
+            <InquiryDialog
+                open={showInquiryDialog}
+                onClose={() => setShowInquiryDialog(false)}
+                business={business}
+                onSubmit={handleInquirySubmit}
+                isSubmitting={sendMessageMutation.isPending}
+            />
 
-                <DialogContent>
-                    {inquirySubmitted ? (
-                        <Alert severity="success" sx={{ mb: 2 }}>
-                            Votre demande d'information a été envoyée avec succès !
-                        </Alert>
-                    ) : (
-                        <>
-                            <Box sx={{ mb: 3, p: 2, bgcolor: 'success.light', borderRadius: 1 }}>
-                                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                                    {business.name}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                    {business.location} • {business.business_number}
-                                </Typography>
-                                <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'success.dark', mt: 1 }}>
-                                    {formatPrice(business.price)}
-                                </Typography>
-                            </Box>
-
-                            <Box component="form" onSubmit={handleInquirySubmit}>
-                                <Grid container spacing={2}>
-                                    <Grid size={{md:6,xs:12}}>
-                                        <TextField
-                                            fullWidth
-                                            label="Votre nom complet *"
-                                            name="name"
-                                            value={inquiryData.name}
-                                            onChange={handleInquiryChange}
-                                            required
-                                        />
-                                    </Grid>
-
-                                    <Grid size={{md:6,xs:12}}>
-                                        <TextField
-                                            fullWidth
-                                            label="Numéro de téléphone *"
-                                            name="phone"
-                                            type="tel"
-                                            placeholder="Ex: +226 70 XX XX XX"
-                                            value={inquiryData.phone}
-                                            onChange={handleInquiryChange}
-                                            required
-                                        />
-                                    </Grid>
-
-                                   <Grid size={{md:6,xs:12}}>
-                                        <TextField
-                                            fullWidth
-                                            label="Email (optionnel)"
-                                            name="email"
-                                            type="email"
-                                            value={inquiryData.email}
-                                            onChange={handleInquiryChange}
-                                        />
-                                    </Grid>
-
-                                    <Grid size={{md:12,xs:12}}>
-                                        <TextField
-                                            fullWidth
-                                            label="Message ou questions (optionnel)"
-                                            name="message"
-                                            multiline
-                                            rows={3}
-                                            placeholder="Posez vos questions sur cette entreprise..."
-                                            value={inquiryData.message}
-                                            onChange={handleInquiryChange}
-                                        />
-                                    </Grid>
-                                </Grid>
-                            </Box>
-                        </>
-                    )}
-                </DialogContent>
-
-                <DialogActions sx={{ px: 3, pb: 3 }}>
-                    <Button onClick={() => setShowInquiryForm(false)}>
-                        Annuler
-                    </Button>
-                    <Button
-                        type="submit"
-                        variant="contained"
-                        color="success"
-                        startIcon={<SendIcon />}
-                        onClick={handleInquirySubmit}
-                        disabled={inquirySubmitted}
-                    >
-                        Envoyer la demande
-                    </Button>
-                </DialogActions>
-            </Dialog>
+            {/* Toast Notification */}
+            {ToastComponent}
         </>
     );
 }

@@ -8,6 +8,8 @@ import ForbiddenPage from './pages/Forbiden';
 import BusinessPublish from './features/BusinessPublish';
 import Dashboard from './features/dashboard';
 import EditBusiness from './features/EditBusiness';
+import AdminBusinessViewPage from './features/ViewBusiness';
+import MessagesPage from './features/Messages';
 
 // Lazy load components for better performance
 const PageLayout = lazy(() => import('./pages/Layout.pages'));
@@ -37,6 +39,9 @@ function App() {
           <Route path={adminRoutes.businesses} element={withPrivateRoute(BusinessPublish)} />
           <Route path={adminRoutes.dashboard} element={withPrivateRoute(Dashboard)} />
           <Route path={adminRoutes.editBusiness} element={withPrivateRoute(EditBusiness)} />
+          <Route path={adminRoutes.viewBusiness} element={withPrivateRoute(AdminBusinessViewPage)} />
+          <Route path={adminRoutes.messages} element={withPrivateRoute(MessagesPage)} />
+
 
         </Route>
         

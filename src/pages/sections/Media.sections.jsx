@@ -1,13 +1,25 @@
-// sections/MediaSection.jsx
+// sections/MediaSection.jsx - UPDATED VERSION
 import { Grid, Accordion, AccordionSummary, AccordionDetails, Typography } from '@mui/material';
 import { MdImage as ImageIcon, MdExpandMore as ExpandMoreIcon } from 'react-icons/md';
 import { useCallback } from 'react';
 import imageCompression from 'browser-image-compression';
 import DropzoneField from "../../components/Dropzone.components"
-export const MediaSection = ({ formData, setFormData, errors = {}, setErrors }) => {
+
+export const MediaSection = ({ 
+    formData, 
+    setFormData, 
+    errors = {}, 
+    setErrors,
+    existingPhotos = [],      // ADD THIS
+    existingVideos = [],      // ADD THIS
+    onDeleteExistingPhoto,    // ADD THIS
+    onDeleteExistingVideo,    // ADD THIS
+    setHasUnsavedChanges      // ADD THIS PROP
+}) => {
 
     const MAX_IMAGE_SIZE_MB = 5;
-    const MAX_VIDEO_SIZE_MB = 50; // Videos are typically larger
+    const MAX_VIDEO_SIZE_MB = 50;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const ACCEPTED_VIDEO_FORMATS = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'];
 
     // Handle photo drop with compression
@@ -15,17 +27,14 @@ export const MediaSection = ({ formData, setFormData, errors = {}, setErrors }) 
         const compressedFiles = await Promise.all(
             acceptedFiles.map(async (file) => {
                 try {
-                    // Define compression options
                     const options = {
-                        maxSizeMB: 1, // Max file size 1MB
-                        maxWidthOrHeight: 1920, // Resize if needed
+                        maxSizeMB: 1,
+                        maxWidthOrHeight: 1920,
                         useWebWorker: true,
                     };
 
-                    // Compress the image
                     const compressedBlob = await imageCompression(file, options);
 
-                    // Create a new File object with the compressed data
                     const compressedFile = new File(
                         [compressedBlob],
                         file.name,
@@ -54,6 +63,11 @@ export const MediaSection = ({ formData, setFormData, errors = {}, setErrors }) 
             photos: [...prevValues.photos, ...compressedFiles],
         }));
 
+        // TRIGGER UNSAVED CHANGES
+        if (setHasUnsavedChanges) {
+            setHasUnsavedChanges(true);
+        }
+
         // Set an error if any files exceed the max size
         const oversizedFiles = compressedFiles.filter((file) => !file.valid).map((file) => file.file.name);
         if (oversizedFiles?.length > 0) {
@@ -62,13 +76,12 @@ export const MediaSection = ({ formData, setFormData, errors = {}, setErrors }) 
                 photos: `${MAX_IMAGE_SIZE_MB} MB limit: ${oversizedFiles.join(", ")}`,
             }));
         } else {
-            // Clear photo errors if all files are valid
             setErrors((prevErrors) => ({
                 ...prevErrors,
                 photos: '',
             }));
         }
-    }, [setFormData, setErrors]);
+    }, [setFormData, setErrors, setHasUnsavedChanges]);
 
     // Handle video drop with validation
     const handleVideoDrop = useCallback((acceptedFiles) => {
@@ -99,6 +112,11 @@ export const MediaSection = ({ formData, setFormData, errors = {}, setErrors }) 
                 ...prev,
                 videos: [...prev.videos, ...validatedVideos],
             }));
+
+            // TRIGGER UNSAVED CHANGES
+            if (setHasUnsavedChanges) {
+                setHasUnsavedChanges(true);
+            }
         }
 
         // Set error if there are invalid videos
@@ -108,14 +126,12 @@ export const MediaSection = ({ formData, setFormData, errors = {}, setErrors }) 
                 videos: `Fichiers invalides: ${invalidVideos.join(", ")}`,
             }));
         } else if (validatedVideos.length > 0) {
-            // Clear error if all videos are valid
             setErrors((prevErrors) => ({
                 ...prevErrors,
                 videos: '',
             }));
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [setFormData, setErrors]);
+    }, [ACCEPTED_VIDEO_FORMATS, setFormData, setHasUnsavedChanges, setErrors]);
 
     // Wrapper function for setValues to match DropzoneField API
     const handleSetValues = (values) => {
@@ -123,9 +139,14 @@ export const MediaSection = ({ formData, setFormData, errors = {}, setErrors }) 
             ...prev,
             ...values,
         }));
+        
+        // TRIGGER UNSAVED CHANGES WHEN DROPZONE UPDATES VALUES
+        if (setHasUnsavedChanges) {
+            setHasUnsavedChanges(true);
+        }
     };
 
-    // Wrapper function for setErrors to handle cases where it's not provided
+    // Wrapper function for setErrors
     const handleSetErrors = (errorUpdate) => {
         if (setErrors) {
             if (typeof errorUpdate === 'function') {
@@ -140,7 +161,7 @@ export const MediaSection = ({ formData, setFormData, errors = {}, setErrors }) 
     };
 
     return (
-        <Accordion>
+        <Accordion defaultExpanded>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <ImageIcon sx={{ mr: 1 }} />
                 <Typography variant="h6">Photos et vidéos</Typography>
@@ -159,6 +180,8 @@ export const MediaSection = ({ formData, setFormData, errors = {}, setErrors }) 
                             errors={errors}
                             fileType="image"
                             fieldName="photos"
+                            existingFiles={existingPhotos}
+                            onDeleteExisting={onDeleteExistingPhoto}
                         />
                     </Grid>
 
@@ -177,6 +200,8 @@ export const MediaSection = ({ formData, setFormData, errors = {}, setErrors }) 
                             errors={errors}
                             fileType="video"
                             fieldName="videos"
+                            existingFiles={existingVideos}
+                            onDeleteExisting={onDeleteExistingVideo}
                         />
                     </Grid>
                 </Grid>

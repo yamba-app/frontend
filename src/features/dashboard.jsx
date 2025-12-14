@@ -266,7 +266,7 @@ const Dashboard = () => {
   
     const handleViewClick = (row) => {
       // Navigate to view page or open view modal
-      console.log('View business:', row);
+     navigate(`/admin/businesses/view/${row?.id}`);
       // Example: navigate(`/admin/businesses/${row.id}`);
     };
   
@@ -661,6 +661,7 @@ const Dashboard = () => {
               business={statusModal.business}
               isLoading={statusMutation.isPending}
             />
+            {ToastComponent}
     </Box>
   );
 };

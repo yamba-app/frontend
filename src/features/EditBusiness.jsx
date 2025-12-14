@@ -386,7 +386,34 @@ const EditBusiness = () => {
                 });
                 setErrors(validationErrors);
                 scrollToFirstError(validationErrors);
-            } else {
+            }else if (error.response?.data?.errors) {
+            // MAP BACKEND ERRORS TO FRONTEND FIELD NAMES
+            const backendErrors = error.response.data.errors;
+            const mappedErrors = {};
+            
+            const fieldMapping = {
+                'full_address': 'fullAddress',
+                'additional_info': 'additionalInfo',
+                'year_established': 'yearEstablished',
+                'monthly_revenue': 'monthlyRevenue',
+                'yearly_revenue': 'yearlyRevenue',
+                'contact_name': 'contactName',
+                'contact_phone': 'contactPhone',
+                'contact_email': 'contactEmail',
+                'submitter_name': 'contactName',
+                'submitter_email': 'contactEmail',
+                'submitter_phone': 'contactPhone',
+            };
+            
+            Object.entries(backendErrors).forEach(([backendKey, errorMessage]) => {
+                const frontendKey = fieldMapping[backendKey] || backendKey;
+                mappedErrors[frontendKey] = Array.isArray(errorMessage) ? errorMessage[0] : errorMessage;
+            });
+            
+            setErrors(mappedErrors);
+            scrollToFirstError(mappedErrors);
+        }
+            else {
                 showToast({
                     title: "Erreur",
                     description: error.message || "Une erreur s'est produite",
@@ -477,6 +504,7 @@ const EditBusiness = () => {
                         existingVideos={formData.existingVideos}
                         onDeleteExistingPhoto={(photoUrl) => deletePhotoMutation.mutate(photoUrl)}
                         onDeleteExistingVideo={(videoUrl) => deleteVideoMutation.mutate(videoUrl)}
+                        setHasUnsavedChanges={setHasUnsavedChanges}
                     />
 
                     {/* Action Buttons */}

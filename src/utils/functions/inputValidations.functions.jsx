@@ -122,3 +122,22 @@ export const passwordValidator = () => {
             .oneOf([Yup.ref('newPassword'), null], "Les mots de passe doivent correspondre"),
     });
 }
+
+export const inquiryValidator = () => {
+    return Yup.object().shape({
+        sender_name: Yup.string()
+            .required("Le nom est obligatoire")
+            .min(2, "Le nom doit contenir au moins 2 caractères"),  
+        sender_email: Yup.string()
+            .required("L'email est obligatoire")
+            .email("Format d'email invalide"),
+        sender_phone: Yup.string()
+            .transform((value) => value.replace(/\D/g, "")) // Remove non-numeric characters
+            .matches(/^\d{8,15}$/, "Numéro de téléphone invalide")
+            .nullable(),
+        message: Yup.string()
+            .required("Le message est obligatoire")
+            .min(10, "Le message doit contenir au moins 10 caractères")
+            .max(2000, "Le message ne peut pas dépasser 2000 caractères"),
+    });
+}   

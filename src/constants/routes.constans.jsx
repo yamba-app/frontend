@@ -15,5 +15,7 @@ export const adminRoutes={
     settings:"/admin/settings",
     profiles:"/admin/profiles",
     businesses:"/admin/businesses",
-    editBusiness:"/admin/businesses/:id"
+    editBusiness:"/admin/businesses/:id",
+    viewBusiness:"/admin/businesses/view/:id",
+    messages:"/admin/messages",
 }

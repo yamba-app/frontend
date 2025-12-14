@@ -8,6 +8,8 @@ import {
   ListItemIcon,
   ListItemText,
   Badge,
+  Popover,
+  CircularProgress,
 } from '@mui/material';
 import Typography from "@mui/material/Typography"
 import Box from "@mui/material/Box"
@@ -29,26 +31,81 @@ import {
   FaBars,
   FaTimes,
   FaPlus,
-  FaUser,
   FaBell,
-  FaSearch,
-  FaTachometerAlt,
-  FaStore,
-  FaUserCircle,
-  FaCog,
-  FaSignOutAlt,
-  FaChartLine,
-  FaUsers,
-  FaFileAlt,
   FaEnvelope,
-  FaShieldAlt,
-  FaHome,
-  FaInfoCircle,
-  FaPhoneAlt,
 } from 'react-icons/fa';
 import useCurrentUser from '../core/current/user.currents';
 import { adminDrawerItems, avatarMenuItems, publicNavItems } from '../constants/items.constant';
 import { useLogout } from '../core/logout/logout.logout';
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { useMarkNotificationAsRead, useUnreadNotificationCount, useUnreadNotifications } from '../features/services/Notifications.services';
+import { useTotalUnreadMessageCount } from '../features/services/Messages.services';
+
+// Notification Item Component
+const NotificationItem = ({ notification,  onClose }) => {
+  const navigate = useNavigate();
+  const { mutate: markAsRead } = useMarkNotificationAsRead();
+
+  const handleClick = () => {
+    // Mark as read
+    if (!notification.read) {
+      markAsRead(notification.id);
+    }
+    
+    // Navigate based on notification type
+    if (notification.business_id) {
+      navigate(`/admin/businesses/${notification.business_id}`);
+    }
+    
+    onClose();
+  };
+
+  return (
+    <MenuItem
+      onClick={handleClick}
+      sx={{
+        py: 2,
+        px: 3,
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+        bgcolor: notification.read ? 'transparent' : 'primary.lighter',
+        '&:hover': {
+          bgcolor: notification.read ? 'grey.50' : 'primary.light',
+        },
+      }}
+    >
+      <Box sx={{ width: '100%' }}>
+        <Box display="flex" justifyContent="space-between" alignItems="start" mb={0.5}>
+          <Typography variant="subtitle2" fontWeight={notification.read ? 500 : 700}>
+            {notification.title}
+          </Typography>
+          {!notification.read && (
+            <Box
+              sx={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                bgcolor: 'primary.main',
+                ml: 1,
+                flexShrink: 0,
+              }}
+            />
+          )}
+        </Box>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          {notification.message}
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          {formatDistanceToNow(new Date(notification.created_at), {
+            addSuffix: true,
+            locale: fr,
+          })}
+        </Typography>
+      </Box>
+    </MenuItem>
+  );
+};
 
 export function Header({ children }) {
   const theme = useTheme();
@@ -59,11 +116,25 @@ export function Header({ children }) {
   const isTablet = useMediaQuery(theme.breakpoints.between('md', 'lg'));
   const [mobileOpen, setMobileOpen] = useState(false);
   const [desktopOpen, setDesktopOpen] = useState(false);
-  const [notificationCount] = useState(5);
   const [anchorEl, setAnchorEl] = useState(null);
+  const [notificationAnchor, setNotificationAnchor] = useState(null);
   const logout = useLogout();
+
   // Check if user is admin
   const isAdmin = isAuthenticated && currentUser?.role === 'admin';
+
+  // Fetch unread counts and notifications (only for admin)
+  const { data: notificationCount = 0 } = useUnreadNotificationCount({
+    enabled: isAdmin,
+  });
+
+  const { data: messageCount = 0 } = useTotalUnreadMessageCount({
+    enabled: isAdmin,
+  });
+
+  const { data: unreadNotifications = [], isLoading: notificationsLoading } = useUnreadNotifications({
+    enabled: isAdmin,
+  });
 
   // Function to determine if a nav item is active
   const isNavItemActive = (path) => {
@@ -108,6 +179,20 @@ export function Header({ children }) {
     } else if (item.path) {
       navigate(item.path);
     }
+  };
+
+  // Notification menu handlers
+  const handleNotificationClick = (event) => {
+    setNotificationAnchor(event.currentTarget);
+  };
+
+  const handleNotificationClose = () => {
+    setNotificationAnchor(null);
+  };
+
+  // Message menu handlers
+  const handleMessageClick = () => {
+    navigate('/admin/messages');
   };
 
   // Admin Drawer Content
@@ -475,9 +560,9 @@ export function Header({ children }) {
             >
               {isAdmin && !isMobile && (
                 <>
-                 
+                  {/* Messages Button */}
                   <IconButton
-                    onClick={() => handleNavClick('/admin/messages')}
+                    onClick={handleMessageClick}
                     sx={{
                       color: 'white',
                       bgcolor: 'rgba(255,255,255,0.15)',
@@ -488,13 +573,14 @@ export function Header({ children }) {
                       transition: 'all 0.2s ease'
                     }}
                   >
-                    <Badge badgeContent={3} color="error">
+                    <Badge badgeContent={messageCount} color="error">
                       <FaEnvelope />
                     </Badge>
                   </IconButton>
 
+                  {/* Notifications Button */}
                   <IconButton
-                    onClick={() => handleNavClick('/admin/notifications')}
+                    onClick={handleNotificationClick}
                     sx={{
                       color: 'white',
                       bgcolor: 'rgba(255,255,255,0.15)',
@@ -561,6 +647,102 @@ export function Header({ children }) {
           </Toolbar>
         </Container>
       </AppBar>
+
+      {/* Notification Popover */}
+      <Popover
+        open={Boolean(notificationAnchor)}
+        anchorEl={notificationAnchor}
+        onClose={handleNotificationClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 1.5,
+              width: 400,
+              maxWidth: '90vw',
+              maxHeight: 500,
+              borderRadius: 3,
+              boxShadow: '0 12px 48px rgba(0,0,0,0.15)',
+              overflow: 'hidden',
+            }
+          }
+        }}
+      >
+        {/* Header */}
+        <Box
+          sx={{
+            px: 3,
+            py: 2,
+            background: 'linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%)',
+            color: 'white',
+          }}
+        >
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6" fontWeight="bold">
+              Notifications
+            </Typography>
+            <Chip
+              label={`${notificationCount} nouveau${notificationCount > 1 ? 'x' : ''}`}
+              size="small"
+              sx={{
+                bgcolor: 'rgba(255,215,0,0.9)',
+                color: '#1B5E20',
+                fontWeight: 'bold',
+              }}
+            />
+          </Box>
+        </Box>
+
+        <Divider />
+
+        {/* Notifications List */}
+        <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
+          {notificationsLoading ? (
+            <Box display="flex" justifyContent="center" alignItems="center" py={4}>
+              <CircularProgress size={32} />
+            </Box>
+          ) : unreadNotifications.length === 0 ? (
+            <Box py={4} textAlign="center">
+              <Typography variant="body2" color="text.secondary">
+                Aucune nouvelle notification
+              </Typography>
+            </Box>
+          ) : (
+            unreadNotifications.map((notification) => (
+              <NotificationItem
+                key={notification.id}
+                notification={notification}
+                onClose={handleNotificationClose}
+              />
+            ))
+          )}
+        </Box>
+
+        {unreadNotifications.length > 0 && (
+          <>
+            <Divider />
+            <Box sx={{ p: 2, textAlign: 'center' }}>
+              <Button
+                fullWidth
+                onClick={() => {
+                  handleNotificationClose();
+                  navigate('/admin/notifications');
+                }}
+                sx={{ textTransform: 'none' }}
+              >
+                Voir toutes les notifications
+              </Button>
+            </Box>
+          </>
+        )}
+      </Popover>
 
       {/* Avatar Dropdown Menu */}
       <Menu
