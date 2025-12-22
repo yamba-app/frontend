@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   useTheme,
@@ -111,8 +111,8 @@ export function Header({ children }) {
   const theme = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const { currentUser, isAuthenticated } = useCurrentUser();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { currentUser, isAuthenticated, isError, isLoading } = useCurrentUser(); 
+   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isTablet = useMediaQuery(theme.breakpoints.between('md', 'lg'));
   const [mobileOpen, setMobileOpen] = useState(false);
   const [desktopOpen, setDesktopOpen] = useState(false);
@@ -120,21 +120,37 @@ export function Header({ children }) {
   const [notificationAnchor, setNotificationAnchor] = useState(null);
   const logout = useLogout();
 
-  // Check if user is admin
+  // ✅ Check if user is admin - only after loading is complete
   const isAdmin = isAuthenticated && currentUser?.role === 'admin';
 
-  // Fetch unread counts and notifications (only for admin)
+  // ✅ Handle authentication errors
+  useEffect(() => {
+    if (isError && !isLoading) {
+      console.error('Authentication error detected in Header');
+      // Optionally clear tokens and redirect
+      const currentPath = location.pathname;
+      // Only redirect to login if on protected routes
+      if (currentPath.startsWith('/admin')) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refresh_token');
+        navigate('/login', { state: { from: currentPath } });
+      }
+    }
+  }, [isError, isLoading, location.pathname, navigate])
+
+   // ✅ Fetch unread counts and notifications (only for verified admin)
   const { data: notificationCount = 0 } = useUnreadNotificationCount({
-    enabled: isAdmin,
+    enabled: isAdmin && !isLoading, // ✅ Only fetch after loading complete
   });
 
   const { data: messageCount = 0 } = useTotalUnreadMessageCount({
-    enabled: isAdmin,
+    enabled: isAdmin && !isLoading, // ✅ Only fetch after loading complete
   });
 
   const { data: unreadNotifications = [], isLoading: notificationsLoading } = useUnreadNotifications({
-    enabled: isAdmin,
+    enabled: isAdmin && !isLoading, // ✅ Only fetch after loading complete
   });
+
 
   // Function to determine if a nav item is active
   const isNavItemActive = (path) => {
