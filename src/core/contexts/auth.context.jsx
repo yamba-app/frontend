@@ -17,8 +17,6 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         if (persist && auth.refreshToken) {
             localStorage.setItem('refresh_token', auth.refreshToken);
-        } else {
-            localStorage.removeItem('refresh_token');
         }
     }, [auth.refreshToken, persist]);
 
@@ -30,7 +28,6 @@ export const AuthProvider = ({ children }) => {
     // Helper to clear auth (logout)
     const clearAuth = () => {
         setAuth({});
-        localStorage.removeItem('refresh_token');
         localStorage.removeItem('persist');
     };
 

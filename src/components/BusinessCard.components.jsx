@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import {
     Card,
     CardContent,
+    CardMedia,
     Typography,
     Box,
     Button,
@@ -21,7 +22,10 @@ import {
     MdCategory as CategoryIcon,
     MdBusiness as BusinessIcon,
     MdPeople as PeopleIcon,
-    MdTrendingUp as TrendingUpIcon
+    MdTrendingUp as TrendingUpIcon,
+    MdImage as ImageIcon,
+    MdVideocam as VideoIcon,
+    MdStorefront as StorefrontIcon
 } from 'react-icons/md';
 import { useSendMessage } from '../features/services/Messages.services';
 import useToast from './Toast.components';
@@ -67,7 +71,7 @@ export function BusinessCard({ business, onClick }) {
             await sendMessageMutation.mutateAsync(payload);
         } catch (error) {
             console.error('Failed to send message:', error);
-            throw error; // Re-throw to let InquiryDialog handle it
+            throw error;
         }
     };
 
@@ -96,6 +100,12 @@ export function BusinessCard({ business, onClick }) {
         });
     };
 
+    // Get the first available image (conditional - only if images exist)
+    const firstImage = business.photos && business.photos.length > 0 ? business.photos[0] : null;
+    const hasPhotos = business.photos?.length > 0;
+    const hasVideos = business.videos?.length > 0;
+    const hasMedia = hasPhotos || hasVideos;
+
     return (
         <>
             <Card
@@ -105,115 +115,380 @@ export function BusinessCard({ business, onClick }) {
                     display: 'flex',
                     flexDirection: 'column',
                     cursor: onClick ? 'pointer' : 'default',
-                    transition: 'all 0.3s ease-in-out',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     position: 'relative',
                     '&:hover': {
                         elevation: 8,
                         transform: onClick ? 'translateY(-8px)' : 'translateY(-4px)',
-                        boxShadow: '0 16px 40px rgba(46, 125, 50, 0.25)',
+                        boxShadow: '0 20px 48px rgba(46, 125, 50, 0.28)',
                     },
-                    borderRadius: 2,
+                    borderRadius: 2.5,
                     overflow: 'hidden',
                     border: '1px solid',
                     borderColor: 'divider',
-                    '&::before': {
-                        content: '""',
+                    background: 'linear-gradient(to bottom, #ffffff 0%, #fafafa 100%)',
+                }}
+                onClick={handleCardClick}
+            >
+                {/* Top Accent Bar */}
+                <Box
+                    sx={{
                         position: 'absolute',
                         top: 0,
                         left: 0,
                         right: 0,
-                        height: '4px',
-                        background: 'linear-gradient(90deg, #2e7d32 0%, #66bb6a 100%)',
-                    }
-                }}
-                onClick={handleCardClick}
-            >
-                <CardContent sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                    {/* Header Section */}
-                    <Box sx={{ mb: 2 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
-                            <Typography
-                                variant="h6"
-                                component="h3"
+                        height: '5px',
+                        background: 'linear-gradient(90deg, #2e7d32 0%, #66bb6a 50%, #2e7d32 100%)',
+                        zIndex: 2,
+                        boxShadow: '0 2px 8px rgba(46, 125, 50, 0.3)'
+                    }}
+                />
+
+                {/* Conditional Image Section - Only renders if image exists */}
+                {firstImage ? (
+                    <Box sx={{ position: 'relative', overflow: 'hidden' }}>
+                        <CardMedia
+                            component="img"
+                            height="220"
+                            image={firstImage}
+                            alt={business.name}
+                            sx={{
+                                objectFit: 'cover',
+                                transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                                '&:hover': {
+                                    transform: 'scale(1.08)'
+                                }
+                            }}
+                        />
+                        
+                        {/* Gradient Overlay for better text readability */}
+                        <Box
+                            sx={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                background: 'linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0) 50%)',
+                                pointerEvents: 'none'
+                            }}
+                        />
+                        
+                        {/* Media Count Badges */}
+                        {hasMedia && (
+                            <Box
                                 sx={{
-                                    fontWeight: 'bold',
-                                    flex: 1,
-                                    lineHeight: 1.3,
-                                    minHeight: '2.6em',
-                                    display: '-webkit-box',
-                                    WebkitLineClamp: 2,
-                                    WebkitBoxOrient: 'vertical',
-                                    overflow: 'hidden',
-                                    color: 'text.primary'
+                                    position: 'absolute',
+                                    bottom: 12,
+                                    right: 12,
+                                    display: 'flex',
+                                    gap: 1,
+                                    zIndex: 1
+                                }}
+                            >
+                                {hasPhotos && (
+                                    <Chip
+                                        icon={<ImageIcon style={{ fontSize: 16, color: 'white' }} />}
+                                        label={business.photos.length}
+                                        size="small"
+                                        sx={{
+                                            bgcolor: 'rgba(0, 0, 0, 0.75)',
+                                            color: 'white',
+                                            fontWeight: 700,
+                                            backdropFilter: 'blur(8px)',
+                                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                                            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                                            '& .MuiChip-icon': {
+                                                color: 'white'
+                                            }
+                                        }}
+                                    />
+                                )}
+                                {hasVideos && (
+                                    <Chip
+                                        icon={<VideoIcon style={{ fontSize: 16, color: 'white' }} />}
+                                        label={business.videos.length}
+                                        size="small"
+                                        sx={{
+                                            bgcolor: 'rgba(211, 47, 47, 0.9)',
+                                            color: 'white',
+                                            fontWeight: 700,
+                                            backdropFilter: 'blur(8px)',
+                                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                                            boxShadow: '0 2px 8px rgba(211, 47, 47, 0.4)',
+                                            '& .MuiChip-icon': {
+                                                color: 'white'
+                                            }
+                                        }}
+                                    />
+                                )}
+                            </Box>
+                        )}
+
+                        {/* Price Overlay on Image */}
+                        <Box
+                            sx={{
+                                position: 'absolute',
+                                top: 16,
+                                left: 16,
+                                background: 'linear-gradient(135deg, rgba(46, 125, 50, 0.97) 0%, rgba(56, 142, 60, 0.95) 100%)',
+                                color: 'white',
+                                px: 2.5,
+                                py: 1.5,
+                                borderRadius: 2,
+                                backdropFilter: 'blur(10px)',
+                                boxShadow: '0 4px 16px rgba(46, 125, 50, 0.4)',
+                                border: '1px solid rgba(255, 255, 255, 0.2)',
+                                zIndex: 1
+                            }}
+                        >
+                            <Typography 
+                                variant="caption" 
+                                sx={{ 
+                                    fontWeight: 700, 
+                                    fontSize: '0.65rem', 
+                                    display: 'block', 
+                                    opacity: 0.95,
+                                    letterSpacing: '0.5px',
+                                    textTransform: 'uppercase'
+                                }}
+                            >
+                                Prix demandé
+                            </Typography>
+                            <Typography 
+                                variant="h6" 
+                                sx={{ 
+                                    fontWeight: 800, 
+                                    lineHeight: 1.2,
+                                    fontSize: '1.25rem',
+                                    textShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                                }}
+                            >
+                                {formatPrice(business.price)}
+                            </Typography>
+                        </Box>
+                    </Box>
+                ) : (
+                    /* No Image Placeholder - Beautiful fallback design */
+                    <Box
+                        sx={{
+                            height: 220,
+                            background: 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            position: 'relative',
+                            overflow: 'hidden',
+                            borderBottom: '1px solid',
+                            borderColor: 'success.light'
+                        }}
+                    >
+                        {/* Decorative Pattern */}
+                        <Box
+                            sx={{
+                                position: 'absolute',
+                                top: -50,
+                                right: -50,
+                                width: 200,
+                                height: 200,
+                                borderRadius: '50%',
+                                background: 'rgba(255, 255, 255, 0.2)',
+                                opacity: 0.5
+                            }}
+                        />
+                        <Box
+                            sx={{
+                                position: 'absolute',
+                                bottom: -30,
+                                left: -30,
+                                width: 150,
+                                height: 150,
+                                borderRadius: '50%',
+                                background: 'rgba(255, 255, 255, 0.15)',
+                                opacity: 0.5
+                            }}
+                        />
+
+                        {/* Icon and Text */}
+                        <Box
+                            sx={{
+                                position: 'relative',
+                                zIndex: 1,
+                                textAlign: 'center',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: 1.5
+                            }}
+                        >
+                            <Box
+                                sx={{
+                                    width: 80,
+                                    height: 80,
+                                    borderRadius: '50%',
+                                    background: 'linear-gradient(135deg, #2e7d32 0%, #66bb6a 100%)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    boxShadow: '0 8px 24px rgba(46, 125, 50, 0.3)',
+                                    border: '3px solid white'
+                                }}
+                            >
+                                <StorefrontIcon style={{ fontSize: 40, color: 'white' }} />
+                            </Box>
+                            <Typography 
+                                variant="h6" 
+                                sx={{ 
+                                    color: 'success.dark',
+                                    fontWeight: 700,
+                                    textShadow: '0 1px 2px rgba(255,255,255,0.5)'
                                 }}
                             >
                                 {business.name}
                             </Typography>
-                            <Box sx={{ ml: 1, flexShrink: 0 }}>
+                            
+                            {/* Price Badge for No-Image Cards */}
+                            <Box
+                                sx={{
+                                    mt: 1,
+                                    background: 'linear-gradient(135deg, #2e7d32 0%, #388e3c 100%)',
+                                    color: 'white',
+                                    px: 3,
+                                    py: 1.5,
+                                    borderRadius: 2,
+                                    boxShadow: '0 4px 16px rgba(46, 125, 50, 0.3)',
+                                    border: '2px solid rgba(255, 255, 255, 0.3)'
+                                }}
+                            >
+                                <Typography 
+                                    variant="h5" 
+                                    sx={{ 
+                                        fontWeight: 800,
+                                        textShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                                    }}
+                                >
+                                    {formatPrice(business.price)}
+                                </Typography>
+                            </Box>
+
+                            {/* Media Info Badge (if any media exists) */}
+                            {hasMedia && (
+                                <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                                    {hasPhotos && (
+                                        <Chip
+                                            icon={<ImageIcon style={{ fontSize: 14 }} />}
+                                            label={`${business.photos.length} photo${business.photos.length > 1 ? 's' : ''}`}
+                                            size="small"
+                                            sx={{
+                                                bgcolor: 'rgba(255, 255, 255, 0.9)',
+                                                color: 'success.dark',
+                                                fontWeight: 600,
+                                                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                                            }}
+                                        />
+                                    )}
+                                    {hasVideos && (
+                                        <Chip
+                                            icon={<VideoIcon style={{ fontSize: 14 }} />}
+                                            label={`${business.videos.length} vidéo${business.videos.length > 1 ? 's' : ''}`}
+                                            size="small"
+                                            sx={{
+                                                bgcolor: 'rgba(211, 47, 47, 0.9)',
+                                                color: 'white',
+                                                fontWeight: 600,
+                                                boxShadow: '0 2px 8px rgba(211, 47, 47, 0.3)'
+                                            }}
+                                        />
+                                    )}
+                                </Box>
+                            )}
+                        </Box>
+                    </Box>
+                )}
+
+                <CardContent sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                    {/* Header Section - Only show name if image exists (otherwise shown in placeholder) */}
+                    <Box sx={{ mb: 2 }}>
+                        {firstImage && (
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+                                <Typography
+                                    variant="h6"
+                                    component="h3"
+                                    sx={{
+                                        fontWeight: 'bold',
+                                        flex: 1,
+                                        lineHeight: 1.3,
+                                        minHeight: '2.6em',
+                                        display: '-webkit-box',
+                                        WebkitLineClamp: 2,
+                                        WebkitBoxOrient: 'vertical',
+                                        overflow: 'hidden',
+                                        color: 'text.primary'
+                                    }}
+                                >
+                                    {business.name}
+                                </Typography>
+                                <Box sx={{ ml: 1, flexShrink: 0 }}>
+                                    <Chip
+                                        icon={<BusinessIcon style={{ fontSize: 14 }} />}
+                                        label={business.businessNumber}
+                                        size="small"
+                                        variant="outlined"
+                                        color="primary"
+                                        sx={{ fontWeight: 500 }}
+                                    />
+                                </Box>
+                            </Box>
+                        )}
+
+                        {/* Business Number for no-image cards */}
+                        {!firstImage && (
+                            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
                                 <Chip
                                     icon={<BusinessIcon style={{ fontSize: 14 }} />}
-                                    label={business.business_number}
+                                    label={`N° ${business.businessNumber}`}
                                     size="small"
                                     variant="outlined"
-                                    color="primary"
-                                    sx={{ fontWeight: 500 }}
+                                    color="success"
+                                    sx={{ fontWeight: 600 }}
                                 />
                             </Box>
-                        </Box>
-
-                        {/* Price - Prominent Display */}
-                        <Box
-                            sx={{
-                                p: 2,
-                                bgcolor: 'success.light',
-                                borderRadius: 1.5,
-                                mb: 2,
-                                border: '2px solid',
-                                borderColor: 'success.main',
-                                background: 'linear-gradient(135deg, rgba(46, 125, 50, 0.1) 0%, rgba(46, 125, 50, 0.05) 100%)',
-                            }}
-                        >
-                            <Typography variant="caption" color="success.dark" sx={{ fontWeight: 600, display: 'block', mb: 0.5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                                Prix demandé
-                            </Typography>
-                            <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'success.dark' }}>
-                                {formatPrice(business.price)}
-                            </Typography>
-                        </Box>
+                        )}
 
                         {/* Key Details in Grid */}
-                        <Stack spacing={1} sx={{ mb: 2 }}>
+                        <Stack spacing={1.5} sx={{ mb: 2 }}>
                             {/* Location */}
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <MapPinIcon style={{ marginRight: 8, color: '#4caf50', fontSize: 18, flexShrink: 0 }} />
-                                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem', fontWeight: 500 }}>
+                                <MapPinIcon style={{ marginRight: 10, color: '#2e7d32', fontSize: 19, flexShrink: 0 }} />
+                                <Typography variant="body2" color="text.primary" sx={{ fontSize: '0.9rem', fontWeight: 600 }}>
                                     {business.location}
                                 </Typography>
                             </Box>
 
                             {/* Category */}
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <CategoryIcon style={{ marginRight: 8, color: '#4caf50', fontSize: 18, flexShrink: 0 }} />
-                                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem', fontWeight: 500 }}>
+                                <CategoryIcon style={{ marginRight: 10, color: '#2e7d32', fontSize: 19, flexShrink: 0 }} />
+                                <Typography variant="body2" color="text.primary" sx={{ fontSize: '0.9rem', fontWeight: 600 }}>
                                     {business.category}
                                 </Typography>
                             </Box>
 
                             {/* Year Established & Employees */}
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                {business.year_established && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap' }}>
+                                {business.yearEstablished && (
                                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <CalendarIcon style={{ marginRight: 6, color: '#4caf50', fontSize: 18, flexShrink: 0 }} />
-                                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-                                            {business.year_established}
+                                        <CalendarIcon style={{ marginRight: 7, color: '#2e7d32', fontSize: 18, flexShrink: 0 }} />
+                                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', fontWeight: 500 }}>
+                                            Créée en {business.yearEstablished}
                                         </Typography>
                                     </Box>
                                 )}
 
                                 {business.employees && (
                                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <PeopleIcon style={{ marginRight: 6, color: '#4caf50', fontSize: 18, flexShrink: 0 }} />
-                                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                                        <PeopleIcon style={{ marginRight: 7, color: '#2e7d32', fontSize: 18, flexShrink: 0 }} />
+                                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', fontWeight: 500 }}>
                                             {business.employees} employés
                                         </Typography>
                                     </Box>
@@ -230,50 +505,40 @@ export function BusinessCard({ business, onClick }) {
                         color="text.secondary"
                         sx={{
                             mb: 2,
-                            lineHeight: 1.6,
-                            minHeight: '4.8em',
+                            lineHeight: 1.7,
+                            minHeight: '5.1em',
                             display: '-webkit-box',
                             WebkitLineClamp: 3,
                             WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden'
+                            overflow: 'hidden',
+                            fontSize: '0.875rem'
                         }}
                     >
                         {truncateText(business.description)}
                     </Typography>
 
                     {/* Monthly Revenue */}
-                    {business.monthly_revenue && (
+                    {business.monthlyRevenue && (
                         <Box
                             sx={{
                                 mb: 2,
                                 p: 1.5,
                                 bgcolor: 'grey.50',
-                                borderRadius: 1,
+                                borderRadius: 1.5,
                                 border: '1px solid',
-                                borderColor: 'grey.200'
+                                borderColor: 'grey.300',
+                                background: 'linear-gradient(135deg, #f5f5f5 0%, #fafafa 100%)'
                             }}
                         >
                             <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                                <TrendingUpIcon style={{ marginRight: 6, fontSize: 16, color: '#4caf50' }} />
-                                <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                                <TrendingUpIcon style={{ marginRight: 7, fontSize: 17, color: '#2e7d32' }} />
+                                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '0.75rem' }}>
                                     Revenu mensuel estimé
                                 </Typography>
                             </Box>
-                            <Typography variant="body2" color="text.primary" sx={{ fontWeight: 500, pl: 3 }}>
-                                {formatPrice(business.monthly_revenue)}
+                            <Typography variant="body2" color="success.dark" sx={{ fontWeight: 700, pl: 3 }}>
+                                {formatPrice(business.monthlyRevenue)}
                             </Typography>
-                        </Box>
-                    )}
-
-                    {/* Media Count Badge */}
-                    {(business.photos?.length > 0 || business.videos?.length > 0) && (
-                        <Box sx={{ mb: 2 }}>
-                            <Chip
-                                label={`${business.photos?.length || 0} photo(s) • ${business.videos?.length || 0} vidéo(s)`}
-                                size="small"
-                                variant="outlined"
-                                sx={{ fontSize: '0.7rem', borderColor: 'success.main', color: 'success.dark' }}
-                            />
                         </Box>
                     )}
 
@@ -284,9 +549,9 @@ export function BusinessCard({ business, onClick }) {
                     <Box sx={{ borderTop: 1, borderColor: 'divider', pt: 2, mt: 2 }} onClick={handleActionClick}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <CalendarIcon style={{ marginRight: 6, fontSize: 14, color: '#999' }} />
-                                <Typography variant="caption" color="text.secondary">
-                                    {formatDate(business.created_at)}
+                                <CalendarIcon style={{ marginRight: 7, fontSize: 15, color: '#757575' }} />
+                                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                                    {formatDate(business.createdAt)}
                                 </Typography>
                             </Box>
                             <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -294,11 +559,11 @@ export function BusinessCard({ business, onClick }) {
                                     size="small"
                                     sx={{
                                         color: 'text.secondary',
-                                        transition: 'all 0.2s ease',
+                                        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                                         '&:hover': {
                                             color: 'error.main',
                                             bgcolor: 'error.light',
-                                            transform: 'scale(1.15)'
+                                            transform: 'scale(1.2)'
                                         }
                                     }}
                                 >
@@ -308,11 +573,11 @@ export function BusinessCard({ business, onClick }) {
                                     size="small"
                                     sx={{
                                         color: 'text.secondary',
-                                        transition: 'all 0.2s ease',
+                                        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                                         '&:hover': {
                                             color: 'primary.main',
                                             bgcolor: 'primary.light',
-                                            transform: 'scale(1.15)'
+                                            transform: 'scale(1.2)'
                                         }
                                     }}
                                 >
@@ -322,7 +587,7 @@ export function BusinessCard({ business, onClick }) {
                         </Box>
 
                         {/* Action Buttons */}
-                        <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Box sx={{ display: 'flex', gap: 1.5 }}>
                             {onClick && (
                                 <Button
                                     variant="contained"
@@ -333,13 +598,15 @@ export function BusinessCard({ business, onClick }) {
                                     startIcon={<EyeIcon />}
                                     sx={{
                                         flex: 1,
-                                        transition: 'all 0.2s ease',
+                                        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                                         '&:hover': {
                                             transform: 'translateY(-2px)',
-                                            boxShadow: '0 6px 20px rgba(46, 125, 50, 0.3)'
+                                            boxShadow: '0 8px 24px rgba(46, 125, 50, 0.35)'
                                         },
-                                        fontWeight: 600,
-                                        textTransform: 'none'
+                                        fontWeight: 700,
+                                        textTransform: 'none',
+                                        py: 1.2,
+                                        background: 'linear-gradient(135deg, #2e7d32 0%, #388e3c 100%)'
                                     }}
                                 >
                                     Voir détails
@@ -356,13 +623,16 @@ export function BusinessCard({ business, onClick }) {
                                 startIcon={<InfoIcon />}
                                 sx={{
                                     flex: onClick ? 0 : 1,
-                                    minWidth: onClick ? '120px' : 'auto',
-                                    fontWeight: 600,
+                                    minWidth: onClick ? '130px' : 'auto',
+                                    fontWeight: 700,
                                     textTransform: 'none',
-                                    transition: 'all 0.2s ease',
+                                    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    py: 1.2,
+                                    borderWidth: 2,
                                     '&:hover': {
                                         transform: 'translateY(-2px)',
-                                        boxShadow: '0 4px 16px rgba(46, 125, 50, 0.2)'
+                                        boxShadow: '0 6px 20px rgba(46, 125, 50, 0.25)',
+                                        borderWidth: 2
                                     }
                                 }}
                             >
