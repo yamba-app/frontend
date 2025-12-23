@@ -231,7 +231,7 @@ export function HomePage() {
                         </Typography>
                         <Button
                             variant="text"
-                            onClick={() => setShowForm(true)}
+                            onClick={() => navigate('/add-business/')}
                             sx={{
                                 color: 'success.main',
                                 '&:hover': {

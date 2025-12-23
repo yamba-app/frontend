@@ -55,6 +55,7 @@ const ContactSection = ({ formData, errors, handleChange }) => (
                         label="Email "
                         name="contact_email"
                         type="email"
+                        isRequired={true}
                         value={formData.contact_email}
                         onChange={handleChange}
                         error={!!errors.contact_email}
