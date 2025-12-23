@@ -43,7 +43,7 @@ import { useMarkNotificationAsRead, useUnreadNotificationCount, useUnreadNotific
 import { useTotalUnreadMessageCount } from '../features/services/Messages.services';
 
 // Notification Item Component
-const NotificationItem = ({ notification,  onClose }) => {
+const NotificationItem = ({ notification, onClose }) => {
   const navigate = useNavigate();
   const { mutate: markAsRead } = useMarkNotificationAsRead();
 
@@ -112,10 +112,9 @@ export function Header({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { currentUser, isAuthenticated, isLoading } = useCurrentUser(); 
-   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isTablet = useMediaQuery(theme.breakpoints.between('md', 'lg'));
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [desktopOpen, setDesktopOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [notificationAnchor, setNotificationAnchor] = useState(null);
   const logout = useLogout();
@@ -123,20 +122,18 @@ export function Header({ children }) {
   // ✅ Check if user is admin - only after loading is complete
   const isAdmin = isAuthenticated && currentUser?.role === 'admin';
 
-
-   // ✅ Fetch unread counts and notifications (only for verified admin)
+  // ✅ Fetch unread counts and notifications (only for verified admin)
   const { data: notificationCount = 0 } = useUnreadNotificationCount({
-    enabled: isAdmin && !isLoading, // ✅ Only fetch after loading complete
+    enabled: isAdmin && !isLoading,
   });
 
   const { data: messageCount = 0 } = useTotalUnreadMessageCount({
-    enabled: isAdmin && !isLoading, // ✅ Only fetch after loading complete
+    enabled: isAdmin && !isLoading,
   });
 
   const { data: unreadNotifications = [], isLoading: notificationsLoading } = useUnreadNotifications({
-    enabled: isAdmin && !isLoading, // ✅ Only fetch after loading complete
+    enabled: isAdmin && !isLoading,
   });
-
 
   // Function to determine if a nav item is active
   const isNavItemActive = (path) => {
@@ -147,17 +144,12 @@ export function Header({ children }) {
   };
 
   const handleDrawerToggle = () => {
-    if (isMobile) {
-      setMobileOpen(!mobileOpen);
-    } else {
-      setDesktopOpen(!desktopOpen);
-    }
+    setMobileOpen(!mobileOpen);
   };
 
   const handleNavClick = (path) => {
     navigate(path);
     setMobileOpen(false);
-    setDesktopOpen(false);
   };
 
   const handleAvatarClick = (event) => {
@@ -196,6 +188,185 @@ export function Header({ children }) {
   const handleMessageClick = () => {
     navigate('/admin/messages');
   };
+
+  // Public Drawer Content (for non-admin users on mobile)
+  const publicDrawer = (
+    <Box sx={{ width: 280, height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Public Drawer Header */}
+      <Box
+        sx={{
+          p: 3,
+          background: 'linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%)',
+          color: 'white',
+          position: 'relative',
+          overflow: 'hidden'
+        }}
+      >
+        {/* Background decoration */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: -20,
+            right: -20,
+            width: 100,
+            height: 100,
+            borderRadius: '50%',
+            bgcolor: 'rgba(255,255,255,0.1)',
+            zIndex: 0
+          }}
+        />
+
+        <Box sx={{ position: 'relative', zIndex: 1 }}>
+          <Box display="flex" alignItems="center" mb={2}>
+            <Avatar
+              sx={{
+                bgcolor: 'rgba(255,255,255,0.2)',
+                color: 'white',
+                mr: 2,
+                width: 48,
+                height: 48,
+                border: '2px solid rgba(255,255,255,0.3)',
+              }}
+            >
+              <FaBuilding size={22} />
+            </Avatar>
+            <Box>
+              <Typography variant="body1" fontWeight="bold">
+                VenteAffaires BF
+              </Typography>
+              <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                Marketplace
+              </Typography>
+            </Box>
+          </Box>
+
+          <IconButton
+            onClick={handleDrawerToggle}
+            sx={{
+              position: 'absolute',
+              top: 10,
+              right: 10,
+              color: 'white',
+              bgcolor: 'rgba(255,255,255,0.1)',
+              '&:hover': {
+                bgcolor: 'rgba(255,255,255,0.2)',
+              }
+            }}
+          >
+            <FaTimes />
+          </IconButton>
+        </Box>
+      </Box>
+
+      <Divider sx={{ bgcolor: 'rgba(0,0,0,0.1)' }} />
+
+      {/* Public Navigation Items */}
+      <List sx={{ px: 2, py: 3, flexGrow: 1 }}>
+        <Typography 
+          variant="overline" 
+          sx={{ 
+            px: 2, 
+            color: 'text.secondary', 
+            fontWeight: 'bold',
+            fontSize: '0.7rem',
+            letterSpacing: 1
+          }}
+        >
+          NAVIGATION
+        </Typography>
+        {publicNavItems.map((item, index) => {
+          const isActive = isNavItemActive(item.path);
+          return (
+            <Fade key={item.id} in timeout={300 + (index * 100)}>
+              <ListItem disablePadding sx={{ mb: 0.5, mt: 1 }}>
+                <ListItemButton
+                  onClick={() => handleNavClick(item.path)}
+                  selected={isActive}
+                  sx={{
+                    borderRadius: 2,
+                    py: 1.5,
+                    '&.Mui-selected': {
+                      bgcolor: 'success.main',
+                      color: 'white',
+                      '&:hover': {
+                        bgcolor: 'success.dark',
+                      },
+                      '& .MuiListItemIcon-root': {
+                        color: 'white',
+                      }
+                    },
+                    '&:hover': {
+                      bgcolor: 'grey.100',
+                      transform: 'translateX(4px)',
+                      transition: 'all 0.2s ease',
+                    },
+                  }}
+                >
+                  <ListItemIcon
+                    sx={{
+                      color: 'success.main',
+                      minWidth: 40,
+                      '& svg': {
+                        fontSize: '1.2rem'
+                      }
+                    }}
+                  >
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={item.label}
+                    primaryTypographyProps={{
+                      fontWeight: isActive ? 600 : 500,
+                      fontSize: '0.95rem'
+                    }}
+                  />
+                  {isActive && (
+                    <Box
+                      sx={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: '50%',
+                        bgcolor: 'white',
+                        ml: 1
+                      }}
+                    />
+                  )}
+                </ListItemButton>
+              </ListItem>
+            </Fade>
+          );
+        })}
+      </List>
+
+      {/* Login Button in Public Drawer */}
+      <Box sx={{ p: 3, borderTop: '1px solid', borderColor: 'divider' }}>
+        <Button
+          fullWidth
+          variant="contained"
+          onClick={() => {
+            handleNavClick('/login');
+          }}
+          sx={{
+            bgcolor: 'success.main',
+            color: 'white',
+            fontWeight: 600,
+            py: 1.5,
+            borderRadius: 2,
+            textTransform: 'none',
+            fontSize: '0.95rem',
+            '&:hover': {
+              bgcolor: 'success.dark',
+              transform: 'translateY(-2px)',
+              boxShadow: 6,
+            },
+            transition: 'all 0.3s ease'
+          }}
+        >
+          Connexion Admin
+        </Button>
+      </Box>
+    </Box>
+  );
 
   // Admin Drawer Content
   const adminDrawer = (
@@ -418,8 +589,8 @@ export function Header({ children }) {
           >
             {/* Left Section - Logo & Menu Button */}
             <Box display="flex" alignItems="center" sx={{ flex: 1 }}>
-              {/* Menu Button (Admin only - both mobile and desktop) */}
-              {isAdmin && (
+              {/* Menu Button - Always show on mobile, only for admin on desktop */}
+              {(isMobile || isAdmin) && (
                 <IconButton
                   color="inherit"
                   aria-label="open drawer"
@@ -462,7 +633,7 @@ export function Header({ children }) {
                   <Box display="flex" alignItems="center" gap={1}>
                     <Typography
                       variant={isMobile ? "h6" : "h5"}
-                      fontSize={isMobile?".9rem":"1.5rem"}
+                      fontSize={isMobile ? ".9rem" : "1.5rem"}
                       component="div"
                       sx={{
                         fontWeight: 700,
@@ -503,7 +674,7 @@ export function Header({ children }) {
               </Box>
             </Box>
 
-            {/* Center Section - Public Navigation (Always visible) */}
+            {/* Center Section - Public Navigation (Desktop only) */}
             {!isMobile && (
               <Box
                 display="flex"
@@ -623,7 +794,7 @@ export function Header({ children }) {
                 >
                   {currentUser?.name?.charAt(0).toUpperCase() || 'A'}
                 </Avatar>
-              ) : (
+              ) : !isMobile && (
                 <Button
                   variant="outlined"
                   size="medium"
@@ -858,27 +1029,30 @@ export function Header({ children }) {
         </Box>
       </Menu>
 
-      {/* Admin Drawer - Works for both mobile and desktop */}
-      {isAdmin && (
-        <Drawer
-          variant="temporary"
-          anchor="left"
-          open={isMobile ? mobileOpen : desktopOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{
-            keepMounted: true,
-          }}
-          sx={{
-            '& .MuiDrawer-paper': {
-              boxSizing: 'border-box',
-              width: 280,
-              border: 'none',
-            },
-          }}
-        >
-          {adminDrawer}
-        </Drawer>
-      )}
+      {/* Drawer - Shows admin drawer for admins, public drawer for others on mobile */}
+      <Drawer
+        variant="temporary"
+        anchor="left"
+        open={mobileOpen}
+        onClose={handleDrawerToggle}
+        ModalProps={{
+          keepMounted: true,
+        }}
+        sx={{
+          zIndex: theme.zIndex.drawer + 2,
+          '& .MuiDrawer-paper': {
+            boxSizing: 'border-box',
+            width: 280,
+            border: 'none',
+            zIndex: theme.zIndex.drawer + 2,
+          },
+          '& .MuiBackdrop-root': {
+            zIndex: theme.zIndex.drawer + 1,
+          },
+        }}
+      >
+        {isAdmin ? adminDrawer : publicDrawer}
+      </Drawer>
 
       {/* Spacer for fixed header */}
       <Toolbar sx={{ minHeight: { xs: 64, sm: 72, md: 80 } }} />

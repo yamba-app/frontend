@@ -141,3 +141,11 @@ export const inquiryValidator = () => {
             .max(2000, "Le message ne peut pas dépasser 2000 caractères"),
     });
 }   
+export const contactValidator = () => {
+    return Yup.object().shape({
+        name: Yup.string().required("Le nom est obligatoire").min(2, "Le nom doit contenir au moins 2 caractères"),
+        email: Yup.string().required("L'email est obligatoire").email("Format d'email invalide"),
+        subject: Yup.string().required("Le sujet est obligatoire").min(5, "Le sujet doit contenir au moins 5 caractères"),
+        message: Yup.string().required("Le message est obligatoire").min(10, "Le message doit contenir au moins 10 caractères").max(2000, "Le message ne peut pas dépasser 2000 caractères"),
+    });
+}

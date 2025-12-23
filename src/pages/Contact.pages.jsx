@@ -1,14 +1,12 @@
 // ContactPage.jsx
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import Container from "@mui/material/Container"
 import Typography from "@mui/material/Typography"
 import Box from "@mui/material/Box"
 import Paper from "@mui/material/Paper"
 import Grid from "@mui/material/Grid"
-import TextField from "@mui/material/TextField"
 import Button from "@mui/material/Button"
-import MenuItem from "@mui/material/MenuItem"
 import {
   MdPhone as PhoneIcon,
   MdEmail as MailIcon,
@@ -16,6 +14,13 @@ import {
   MdSend as SendIcon
 } from 'react-icons/md';
 import { useTheme } from '@mui/material/styles';
+import { InputField, SelectField, TextArea } from '../components/Form.components';
+import DOMPurify from 'dompurify';
+import { fetchCsrfToken } from '../core/token/csrf.token';
+import { axiosPrivate } from '../core/instance/axios.instance';
+import useToast from '../components/Toast.components';
+import { contactValidator } from '../utils/functions/inputValidations.functions';
+import { CircularProgress } from '@mui/material';
 
 export function ContactPage() {
   const [formData, setFormData] = useState({
@@ -24,20 +29,54 @@ export function ContactPage() {
     subject: '',
     message: ''
   });
+  const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
   const theme = useTheme();
+  const { showToast } = useToast();
+  const contactSchema = contactValidator();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    alert('Merci pour votre message ! Nous vous répondrons dans les plus brefs délais.');
-    setFormData({ name: '', email: '', subject: '', message: '' });
-  };
+    const handleSubmit = useCallback(async (e) => {
+        e.preventDefault();
+        setIsLoading(true);
+        try {
+            await contactSchema.validate(formData, { abortEarly: false });
+            await fetchCsrfToken();
+            const clientData = {
+                ...formData
+            };
+            const response = await axiosPrivate.post('/api/contact', clientData);
+            if (response.status === 200 || response.status === 201) {
+        
+                setFormData({ name: "", email: "" , subject: "", message: "" });
+                showToast({ title: "Success", description: response.data.message, status: "success" });
+            }
+        } catch (error) {
+            if (error.response && error.response.data.message) {
+                showToast({ title: "", description: error.response.data.message, status: "error" });
+            } else if (error.inner) {
+                const validationErrors = {};
+                error.inner.forEach((err) => { validationErrors[err.path] = err.message; });
+                setErrors(validationErrors);
+            } else {
+                showToast({ title: "", description: error.message, status: "error" });
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    }, [contactSchema, formData, showToast]);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
+   const handleInputChange = useCallback((event) => {
+        const { name, type, value, checked } = event.target;
+        const sanitizedValue = type === "checkbox" ? checked : DOMPurify.sanitize(value);
+        setFormData((prevValues) => ({
+            ...prevValues,
+            [name]: sanitizedValue
+        }));
+        setErrors((prevErrors) => ({
+            ...prevErrors,
+            [name]: undefined
+        }));
+    }, []);
 
   const contactInfo = [
     {
@@ -49,13 +88,13 @@ export function ContactPage() {
     {
       icon: <MailIcon color="white" size={"24"}/>,
       title: "Email", 
-      value: "vabf@yamba-dh.com",
+      value: "services@yamba-dh.com",
       subtitle: "Réponse sous 24h"
     },
     {
       icon: <MapPinIcon color="white" size={"24"} />,
       title: "Adresse",
-      value: "Ouagadougou, Burkina Faso\nSecteur 30, Rue XX.XX",
+      value: "Ouagadougou, Burkina Faso\nSecteur 30,",
       subtitle: ""
     }
   ];
@@ -76,20 +115,20 @@ export function ContactPage() {
   ];
 
   const subjectOptions = [
-    { value: "question", label: "Question générale" },
-    { value: "probleme", label: "Problème technique" },
-    { value: "suggestion", label: "Suggestion d'amélioration" },
-    { value: "signalement", label: "Signaler une annonce" },
-    { value: "partenariat", label: "Proposition de partenariat" }
+    { key: "question", value: "Question générale" },
+    { key: "probleme", value: "Problème technique" },
+    { key: "suggestion", value: "Suggestion d'amélioration" },
+    { key: "signalement", value: "Signaler une annonce" },
+    { key: "partenariat", value: "Proposition de partenariat" }
   ];
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box sx={{ textAlign: 'center', mb: 6 }}>
-        <Typography variant="h2" component="h1" sx={{ fontWeight: 'bold', mb: 2 }}>
+        <Typography variant="h2" component="h1" sx={{ fontWeight: 'bold', mb: 2, fontSize: { xs: '2.2rem', md: '3.5rem' }}}>
           Nous contacter
         </Typography>
-        <Typography variant="h5" color="text.secondary">
+        <Typography variant="h5" color="text.secondary" sx={{fontSize:{md:"1.9rem", sm:"1rem"}}}>
           Une question ? Un problème ? N'hésitez pas à nous contacter, nous sommes là pour vous aider !
         </Typography>
       </Box>
@@ -97,8 +136,8 @@ export function ContactPage() {
       <Grid container spacing={4}>
         {/* Contact Information */}
         <Grid size={{md:6,sm:12,xs:12}}>
-          <Paper elevation={3} sx={{ p: 4, height: 'fit-content' }}>
-            <Typography variant="h4" component="h2" sx={{ fontWeight: 'bold', mb: 3 }}>
+          <Paper elevation={3} sx={{ p: 2, height: 'fit-content' }}>
+            <Typography variant="h4" component="h2" sx={{ fontWeight: 'bold', mb: 3, fontSize: { xs: '2rem', md: '3.5rem' } }}>
               Nos coordonnées
             </Typography>
             
@@ -143,7 +182,7 @@ export function ContactPage() {
                 p: 3, 
                 bgcolor: theme.palette.primary.light,
                 '& .MuiTypography-root': {
-                  color: theme.palette.success.contrastText
+                  color: "white"
                 }
               }}
             >
@@ -168,64 +207,67 @@ export function ContactPage() {
 
         {/* Contact Form */}
         <Grid size={{md:6,sm:12,xs:12}}>
-          <Paper elevation={3} sx={{ p: 4 }}>
+          <Paper elevation={3} sx={{ p: 2 }}>
             <Typography variant="h4" component="h2" sx={{ fontWeight: 'bold', mb: 3 }}>
               Envoyez-nous un message
             </Typography>
             
             <Box component="form" onSubmit={handleSubmit}>
-              <Grid container spacing={3}>
+              <Grid container spacing={2}>
                 <Grid size={{md:12,sm:12,xs:12}}>
-                  <TextField
+                  <InputField
                     fullWidth
-                    label="Votre nom *"
+                    label="Votre nom"
                     name="name"
                     value={formData.name}
-                    onChange={handleChange}
-                    required
+                    error={!!errors.name}
+                    errorMessage={errors.name}
+                    onChange={handleInputChange}
+                    isRequired={true}
                   />
                 </Grid>
 
                 <Grid size={{md:12,sm:12,xs:12}}>
-                  <TextField
+                  <InputField
                     fullWidth
-                    label="Email *"
+                    label="Email "
                     name="email"
                     type="email"
+                    error={!!errors.email}
+                    errorMessage={errors.email}
                     value={formData.email}
-                    onChange={handleChange}
-                    required
+                    onChange={handleInputChange}
+                    isRequired={true}
                   />
                 </Grid>
 
                 <Grid size={{md:12,sm:12,xs:12}}>
-                  <TextField
+                  <SelectField
                     fullWidth
                     select
-                    label="Sujet *"
+                    label="Sujet du message"
                     name="subject"
                     value={formData.subject}
-                    onChange={handleChange}
-                    required
-                  >
-                    <MenuItem value="">Choisissez un sujet</MenuItem>
-                    {subjectOptions.map((option) => (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    ))}
-                  </TextField>
+                    error={!!errors.subject}
+                    helperText={errors.subject}
+                    onChange={handleInputChange}
+                    isRequired={true}
+                    options={subjectOptions}
+                  />
+                    
                 </Grid>
 
                 <Grid size={{md:12,sm:12,xs:12}}>
-                  <TextField
+                  <TextArea
                     fullWidth
                     label="Message"
                     name="message"
                     multiline
+                    error={!!errors.message}
+                    helperText={errors.message}
                     rows={6}
                     value={formData.message}
-                    onChange={handleChange}
+                    onChange={handleInputChange}
                     placeholder="Décrivez votre demande en détail..."
                     
                   />
@@ -236,12 +278,13 @@ export function ContactPage() {
                     type="submit"
                     variant="contained"
                     color="success"
+                    disabled={isLoading}
                     size="large"
                     sx={{color:"white"}}
                     fullWidth
                     startIcon={<SendIcon color='white'/>}
                   >
-                    Envoyer le message
+                    {isLoading ? <CircularProgress size={20} /> : 'Envoyer le message'}
                   </Button>
                 </Grid>
               </Grid>
