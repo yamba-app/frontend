@@ -362,7 +362,7 @@ export function Header({ children }) {
             transition: 'all 0.3s ease'
           }}
         >
-          Connexion Admin
+          Connexion
         </Button>
       </Box>
     </Box>
