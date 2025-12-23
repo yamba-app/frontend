@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   useTheme,
@@ -111,7 +111,7 @@ export function Header({ children }) {
   const theme = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const { currentUser, isAuthenticated, isError, isLoading } = useCurrentUser(); 
+  const { currentUser, isAuthenticated, isLoading } = useCurrentUser(); 
    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const isTablet = useMediaQuery(theme.breakpoints.between('md', 'lg'));
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -123,20 +123,6 @@ export function Header({ children }) {
   // ✅ Check if user is admin - only after loading is complete
   const isAdmin = isAuthenticated && currentUser?.role === 'admin';
 
-  // ✅ Handle authentication errors
-  useEffect(() => {
-    if (isError && !isLoading) {
-      console.error('Authentication error detected in Header');
-      // Optionally clear tokens and redirect
-      const currentPath = location.pathname;
-      // Only redirect to login if on protected routes
-      if (currentPath.startsWith('/admin')) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('refresh_token');
-        navigate('/login', { state: { from: currentPath } });
-      }
-    }
-  }, [isError, isLoading, location.pathname, navigate])
 
    // ✅ Fetch unread counts and notifications (only for verified admin)
   const { data: notificationCount = 0 } = useUnreadNotificationCount({

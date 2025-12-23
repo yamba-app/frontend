@@ -66,7 +66,7 @@ const LoginPage = () => {
             const response = await axiosPrivate.post('/api/auth/signin', clientData);
             if (response.status === 200 || response.status === 201) {
                 const result = response.data;
-                setAuth({ accessToken: result.token, role: result.role, refreshToken: result.refresh_token });
+                setAuth({ accessToken: result.token, role: result.role, refreshToken: result.refresh_token, user: result.user });
                 localStorage.setItem("persist", true);
                 localStorage.setItem('refresh_token', result.refresh_token);
                 navigate(result.redirection, { replace: true });

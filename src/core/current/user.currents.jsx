@@ -2,45 +2,59 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import useAxiosPrivate from '../instance/axiosprivate.instance';
 import { authRoutes } from '../../constants/routes.constans';
-
+import useAuth from '../contexts/useAth.contexts';
 
 const useCurrentUser = () => {
     const axiosPrivate = useAxiosPrivate();
     const navigate = useNavigate();
+    const { auth, setAuth, clearAuth } = useAuth();
 
-    // Fetch function for current user with try-catch block
+    // ✅ Only fetch if we have a token but no user data
+    const shouldFetch = !!auth.accessToken && !auth.user;
+
     const fetchCurrentUser = async () => {
         try {
-            const response = await axiosPrivate.get('api/auth/verify-token');
-            return response.data // Return the user data if successful
-        } catch (error) {
-            // Handle error explicitly
-            if (error.response) {
-                if (error.message === "Unauthorized") {
-                    navigate(authRoutes.signIn); // Navigate on specific error
-                } else {
-                    console.error("Error fetching current user:", error.message); // Log unexpected errors
-                }// Rethrow the error for React Query's onError handler
-            } else {
-                // Handle network or other errors
-                console.error("Network or unknown error:", error.message);
-                throw new Error("An unknown error occurred while fetching user data.");
+            const response = await axiosPrivate.get('/api/auth/verify-token');
+            
+            // ✅ Update auth context with fresh user data
+            if (response.data.isAuthenticated) {
+                setAuth(prev => ({
+                    ...prev,
+                    user: response.data.user,
+                }));
             }
+            
+            return response.data;
+        } catch (error) {
+            console.error("Error fetching current user:", error);
+            
+            // ✅ Clear auth on 401
+            if (error.response?.status === 401) {
+                clearAuth();
+                navigate(authRoutes.signIn);
+            }
+            
+            throw error;
         }
     };
 
-    // Use React Query for fetching user data
-    const { data: user, isError, isLoading , refetch} = useQuery({
+    const { data, isError, isLoading, refetch } = useQuery({
         queryKey: ['currentUser'],
         queryFn: fetchCurrentUser,
-        staleTime: 5 * 60 * 1000, // ✅ Keep data fresh for 5 mi
-        retry: 3,  // ✅ Retry 3 times if API fails
-        retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 30000), // ✅ Exponential backoff
-        refetchOnWindowFocus: false, // Disable refetching on window focus
-
+        enabled: shouldFetch, // ✅ Only fetch when needed
+        staleTime: 5 * 60 * 1000,
+        retry: 1, // ✅ Reduced retries
+        refetchOnWindowFocus: false,
     });
 
-    return { currentUser:user?.user, isAuthenticated: user?.isAuthenticated, isError, isLoading, refetch };
+    return {
+        // ✅ Prioritize auth.user from context (immediate), fallback to API data
+        currentUser: auth.user || data?.user,
+        isAuthenticated: auth.accessToken && (auth.user || data?.isAuthenticated),
+        isError,
+        isLoading,
+        refetch,
+    };
 };
 
 export default useCurrentUser;
