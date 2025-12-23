@@ -11,16 +11,15 @@ export const MediaSection = ({
     errors = {}, 
     setErrors,
     existingPhotos = [],      // ADD THIS
-    existingVideos = [],      // ADD THIS
+    // existingVideos = [],      // ADD THIS
     onDeleteExistingPhoto,    // ADD THIS
-    onDeleteExistingVideo,    // ADD THIS
+    // onDeleteExistingVideo,    // ADD THIS
     setHasUnsavedChanges      // ADD THIS PROP
 }) => {
 
     const MAX_IMAGE_SIZE_MB = 5;
-    const MAX_VIDEO_SIZE_MB = 50;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    const ACCEPTED_VIDEO_FORMATS = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'];
+    // const MAX_VIDEO_SIZE_MB = 50;
+    // const ACCEPTED_VIDEO_FORMATS = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'];
 
     // Handle photo drop with compression
     const onDrop = useCallback(async (acceptedFiles) => {
@@ -84,54 +83,54 @@ export const MediaSection = ({
     }, [setFormData, setErrors, setHasUnsavedChanges]);
 
     // Handle video drop with validation
-    const handleVideoDrop = useCallback((acceptedFiles) => {
-        const validatedVideos = [];
-        const invalidVideos = [];
+    // const handleVideoDrop = useCallback((acceptedFiles) => {
+    //     const validatedVideos = [];
+    //     const invalidVideos = [];
 
-        acceptedFiles.forEach((file) => {
-            const fileSizeMB = file.size / 1024 / 1024;
-            const isValidFormat = ACCEPTED_VIDEO_FORMATS.includes(file.type);
-            const isValidSize = fileSizeMB <= MAX_VIDEO_SIZE_MB;
+    //     acceptedFiles.forEach((file) => {
+    //         const fileSizeMB = file.size / 1024 / 1024;
+    //         const isValidFormat = ACCEPTED_VIDEO_FORMATS.includes(file.type);
+    //         const isValidSize = fileSizeMB <= MAX_VIDEO_SIZE_MB;
 
-            if (!isValidFormat) {
-                invalidVideos.push(`${file.name} (format non supporté)`);
-            } else if (!isValidSize) {
-                invalidVideos.push(`${file.name} (dépasse ${MAX_VIDEO_SIZE_MB}MB)`);
-            } else {
-                validatedVideos.push({
-                    file,
-                    preview: URL.createObjectURL(file),
-                    valid: true,
-                });
-            }
-        });
+    //         if (!isValidFormat) {
+    //             invalidVideos.push(`${file.name} (format non supporté)`);
+    //         } else if (!isValidSize) {
+    //             invalidVideos.push(`${file.name} (dépasse ${MAX_VIDEO_SIZE_MB}MB)`);
+    //         } else {
+    //             validatedVideos.push({
+    //                 file,
+    //                 preview: URL.createObjectURL(file),
+    //                 valid: true,
+    //             });
+    //         }
+    //     });
 
-        // Update state with valid videos
-        if (validatedVideos.length > 0) {
-            setFormData((prev) => ({
-                ...prev,
-                videos: [...prev.videos, ...validatedVideos],
-            }));
+    //     // Update state with valid videos
+    //     if (validatedVideos.length > 0) {
+    //         setFormData((prev) => ({
+    //             ...prev,
+    //             videos: [...prev.videos, ...validatedVideos],
+    //         }));
 
-            // TRIGGER UNSAVED CHANGES
-            if (setHasUnsavedChanges) {
-                setHasUnsavedChanges(true);
-            }
-        }
+    //         // TRIGGER UNSAVED CHANGES
+    //         if (setHasUnsavedChanges) {
+    //             setHasUnsavedChanges(true);
+    //         }
+    //     }
 
-        // Set error if there are invalid videos
-        if (invalidVideos.length > 0) {
-            setErrors((prevErrors) => ({
-                ...prevErrors,
-                videos: `Fichiers invalides: ${invalidVideos.join(", ")}`,
-            }));
-        } else if (validatedVideos.length > 0) {
-            setErrors((prevErrors) => ({
-                ...prevErrors,
-                videos: '',
-            }));
-        }
-    }, [ACCEPTED_VIDEO_FORMATS, setFormData, setHasUnsavedChanges, setErrors]);
+    //     // Set error if there are invalid videos
+    //     if (invalidVideos.length > 0) {
+    //         setErrors((prevErrors) => ({
+    //             ...prevErrors,
+    //             videos: `Fichiers invalides: ${invalidVideos.join(", ")}`,
+    //         }));
+    //     } else if (validatedVideos.length > 0) {
+    //         setErrors((prevErrors) => ({
+    //             ...prevErrors,
+    //             videos: '',
+    //         }));
+    //     }
+    // }, [ACCEPTED_VIDEO_FORMATS, setFormData, setHasUnsavedChanges, setErrors]);
 
     // Wrapper function for setValues to match DropzoneField API
     const handleSetValues = (values) => {
@@ -168,7 +167,7 @@ export const MediaSection = ({
             </AccordionSummary>
             <AccordionDetails>
                 <Grid container spacing={3}>
-                    <Grid size={{ md: 6, sm: 12, xs: 12 }}>
+                    <Grid size={{ md: 12, sm: 12, xs: 12 }}>
                         <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500 }}>
                             Photos de l'entreprise
                         </Typography>
@@ -185,7 +184,7 @@ export const MediaSection = ({
                         />
                     </Grid>
 
-                    <Grid size={{ md: 6, sm: 12, xs: 12 }}>
+                    {/* <Grid size={{ md: 6, sm: 12, xs: 12 }}>
                         <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500 }}>
                             Vidéos de l'entreprise
                         </Typography>
@@ -203,7 +202,7 @@ export const MediaSection = ({
                             existingFiles={existingVideos}
                             onDeleteExisting={onDeleteExistingVideo}
                         />
-                    </Grid>
+                    </Grid> */}
                 </Grid>
             </AccordionDetails>
         </Accordion>

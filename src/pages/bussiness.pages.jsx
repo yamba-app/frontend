@@ -6,7 +6,6 @@ import {
     Alert,
     Container,
     CircularProgress,
-    Snackbar
 } from '@mui/material';
 import DOMPurify from 'dompurify';
 import BasicInfoSection from './sections/Info.section';
@@ -20,29 +19,28 @@ import { axiosPrivate } from '../core/instance/axios.instance';
 import { fetchCsrfToken } from '../core/token/csrf.token';
 import useToast from '../components/Toast.components';
 
-// API Configuration
 
 const BusinessFormPage = () => {
     const [formData, setFormData] = useState({
         name: '',
-        category: '',
+        category: 'COMMERCE',
         location: '',
-        fullAddress: '',
+        full_address: '',
         description: '',
-        additionalInfo: '',
+        additional_info: '',
         price: '',
-        yearEstablished: '',
+        year_established: '2023',
         employees: '',
-        monthlyRevenue: '',
-        yearlyRevenue: '',
+        monthly_revenue: '',
+        yearly_revenue: '',
         assets: [],
         newAsset: '',
         advantages: [],
         newAdvantage: '',
         reasons: '',
-        contactName: '',
-        contactPhone: '',
-        contactEmail: '',
+        contact_name: '',
+        contact_phone: '',
+        contact_email: '',
         photos: [],
         videos: []
     });
@@ -51,7 +49,6 @@ const BusinessFormPage = () => {
     const [errors, setErrors] = useState({});
     const { showToast, ToastComponent } = useToast();
 
-    // Yup validation schema
     const validationSchema = businessValidator();
 
     const handleChange = useCallback((event) => {
@@ -83,7 +80,6 @@ const BusinessFormPage = () => {
         }));
     };
 
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true);
@@ -94,10 +90,10 @@ const BusinessFormPage = () => {
             const dataToValidate = {
                 ...formData,
                 price: formData.price ? parseInt(formData.price.replace(/[^0-9]/g, '')) : null,
-                yearEstablished: formData.yearEstablished ? parseInt(formData.yearEstablished) : null,
+                year_established: formData.year_established ? parseInt(formData.year_established) : null,
                 employees: formData.employees ? parseInt(formData.employees) : null,
-                monthlyRevenue: formData.monthlyRevenue ? parseInt(formData.monthlyRevenue.replace(/[^0-9]/g, '')) : null,
-                yearlyRevenue: formData.yearlyRevenue ? parseInt(formData.yearlyRevenue.replace(/[^0-9]/g, '')) : null,
+                monthly_revenue: formData.monthly_revenue ? parseInt(formData.monthly_revenue.replace(/[^0-9]/g, '')) : null,
+                yearly_revenue: formData.yearly_revenue ? parseInt(formData.yearly_revenue.replace(/[^0-9]/g, '')) : null,
             };
 
             // Client-side validation with Yup
@@ -106,75 +102,97 @@ const BusinessFormPage = () => {
             // Create FormData for file uploads
             const formDataToSend = new FormData();
 
-            // Submitter Info
-            formDataToSend.append('submitter_name', formData.contactName);
-            formDataToSend.append('submitter_email', formData.contactEmail);
-            formDataToSend.append('submitter_phone', formData.contactPhone);
+            // FIXED: Use contact info as submitter info (same person)
+            formDataToSend.append('submitter_name', formData.contact_name);
+            formDataToSend.append('submitter_email', formData.contact_email);
+            formDataToSend.append('submitter_phone', formData.contact_phone || '');
 
             // Business Info
             formDataToSend.append('name', formData.name);
             formDataToSend.append('category', formData.category);
             formDataToSend.append('location', formData.location);
-            formDataToSend.append('full_address', formData.fullAddress);
+            formDataToSend.append('full_address', formData.full_address || '');
             formDataToSend.append('description', formData.description);
-            formDataToSend.append('additional_info', formData.additionalInfo || '');
+            formDataToSend.append('additional_info', formData.additional_info || '');
 
-            // Financial
+            // Financial - Required fields
             formDataToSend.append('price', parseInt(formData.price.replace(/[^0-9]/g, '')));
+            formDataToSend.append('year_established', parseInt(formData.year_established));
+            formDataToSend.append('employees', parseInt(formData.employees));
 
-            if (formData.yearEstablished) {
-                formDataToSend.append('year_established', parseInt(formData.yearEstablished));
+            // Optional financial fields
+            if (formData.monthly_revenue) {
+                formDataToSend.append('monthly_revenue', parseInt(formData.monthly_revenue.replace(/[^0-9]/g, '')));
             }
-            if (formData.employees) {
-                formDataToSend.append('employees', parseInt(formData.employees));
-            }
-            if (formData.monthlyRevenue) {
-                formDataToSend.append('monthly_revenue', parseInt(formData.monthlyRevenue.replace(/[^0-9]/g, '')));
-            }
-            if (formData.yearlyRevenue) {
-                formDataToSend.append('yearly_revenue', parseInt(formData.yearlyRevenue.replace(/[^0-9]/g, '')));
+            if (formData.yearly_revenue) {
+                formDataToSend.append('yearly_revenue', parseInt(formData.yearly_revenue.replace(/[^0-9]/g, '')));
             }
 
             // Arrays (convert to JSON strings)
             formDataToSend.append('assets', JSON.stringify(formData.assets));
             formDataToSend.append('advantages', JSON.stringify(formData.advantages));
-            formDataToSend.append('reasons', formData.reasons || '');
+            
+            // Reasons for selling
+            if (formData.reasons) {
+                formDataToSend.append('reasons', formData.reasons);
+            }
 
-            // Business Contact
-            formDataToSend.append('contact_name', formData.contactName);
-            formDataToSend.append('contact_phone', formData.contactPhone);
-            formDataToSend.append('contact_email', formData.contactEmail);
+            // Business Contact (same as submitter in this case)
+            formDataToSend.append('contact_name', formData.contact_name);
+            formDataToSend.append('contact_phone', formData.contact_phone);
+            formDataToSend.append('contact_email', formData.contact_email);
 
-            // Photos - FIXED: Extract the actual File object from each photo
+            // Photos - Extract File objects
             if (formData.photos && formData.photos.length > 0) {
-                formData.photos.forEach((photoObj) => {
-                    if (photoObj.file instanceof File) {
-                        formDataToSend.append('photos[]', photoObj.file);
+                formData.photos.forEach((photoObj, index) => {
+                    const fileToUpload = photoObj instanceof File ? photoObj : photoObj.file;
+                    
+                    if (fileToUpload instanceof File) {
+                        formDataToSend.append('photos[]', fileToUpload);
+                    } else {
+                        console.warn(`Photo at index ${index} is not a valid File object`, photoObj);
                     }
                 });
             }
 
-            // Videos - FIXED: Extract the actual File object from each video
+            // Videos - Extract File objects
             if (formData.videos && formData.videos.length > 0) {
-                formData.videos.forEach((videoObj) => {
-                    if (videoObj.file instanceof File) {
-                        formDataToSend.append('videos[]', videoObj.file);
+                formData.videos.forEach((videoObj, index) => {
+                    const fileToUpload = videoObj instanceof File ? videoObj : videoObj.file;
+                    
+                    if (fileToUpload instanceof File) {
+                        formDataToSend.append('videos[]', fileToUpload);
+                    } else {
+                        console.warn(`Video at index ${index} is not a valid File object`, videoObj);
                     }
                 });
             }
 
-          
+            // Debug: Log FormData contents
+            console.log('=== FormData Contents ===');
+            for (let pair of formDataToSend.entries()) {
+                if (pair[1] instanceof File) {
+                    console.log(pair[0], ':', pair[1].name, '-', pair[1].size, 'bytes');
+                } else {
+                    console.log(pair[0], ':', pair[1]);
+                }
+            }
+
+            // Fetch CSRF token
             await fetchCsrfToken();
 
+            // Submit form
             const response = await axiosPrivate.post('/api/busines/submit', formDataToSend, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+                headers: { 
+                    'Content-Type': 'multipart/form-data'
+                }
             });
 
-            // Show success message
+            // Success handling
             if (response.status === 201) {
                 showToast({
-                    title: "",
-                    description: "Entreprise soumise avec succès !",
+                    title: "Succès",
+                    description: response.data.message || "Entreprise soumise avec succès !",
                     status: "success"
                 });
 
@@ -195,50 +213,84 @@ const BusinessFormPage = () => {
                     name: '',
                     category: '',
                     location: '',
-                    fullAddress: '',
+                    full_address: '',
                     description: '',
-                    additionalInfo: '',
+                    additional_info: '',
                     price: '',
-                    yearEstablished: '',
+                    year_established: '',
                     employees: '',
-                    monthlyRevenue: '',
-                    yearlyRevenue: '',
+                    monthly_revenue: '',
+                    yearly_revenue: '',
                     assets: [],
                     newAsset: '',
                     advantages: [],
                     newAdvantage: '',
                     reasons: '',
-                    contactName: '',
-                    contactPhone: '',
-                    contactEmail: '',
+                    contact_name: '',
+                    contact_phone: '',
+                    contact_email: '',
                     photos: [],
                     videos: []
                 });
+
+                // Scroll to top
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
 
         } catch (error) {
-            if (error.response && error.response.data.message) {
+            console.error('Submission error:', error);
+
+            // Handle validation errors from backend
+            if (error.response?.status === 422 && error.response?.data?.errors) {
+                const backendErrors = error.response.data.errors;
+                setErrors(backendErrors);
+                
                 showToast({
-                    title: "",
-                    description: error.response.data.message,
+                    title: "Erreur de validation",
+                    description: "Veuillez vérifier les champs du formulaire",
                     status: "error"
                 });
-            } else if (error.inner) {
+
+                // Scroll to first error
+                const firstErrorField = Object.keys(backendErrors)[0];
+                const errorElement = document.querySelector(`[name="${firstErrorField}"]`);
+                if (errorElement) {
+                    errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+            // Handle Yup validation errors
+            else if (error.inner) {
                 const validationErrors = {};
                 error.inner.forEach((err) => {
                     validationErrors[err.path] = err.message;
                 });
                 setErrors(validationErrors);
 
+                showToast({
+                    title: "Erreur de validation",
+                    description: "Veuillez vérifier tous les champs requis",
+                    status: "error"
+                });
+
                 // Scroll to first error
                 const firstErrorField = document.querySelector('[name="' + Object.keys(validationErrors)[0] + '"]');
                 if (firstErrorField) {
                     firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
-            } else {
+            }
+            // Handle general errors
+            else if (error.response?.data?.message) {
                 showToast({
-                    title: "",
-                    description: error.message || "Une erreur s'est produite",
+                    title: "Erreur",
+                    description: error.response.data.message,
+                    status: "error"
+                });
+            }
+            // Network or unknown errors
+            else {
+                showToast({
+                    title: "Erreur",
+                    description: error.message || "Une erreur s'est produite lors de la soumission",
                     status: "error"
                 });
             }

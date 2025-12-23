@@ -462,6 +462,7 @@ export function Header({ children }) {
                   <Box display="flex" alignItems="center" gap={1}>
                     <Typography
                       variant={isMobile ? "h6" : "h5"}
+                      fontSize={isMobile?".9rem":"1.5rem"}
                       component="div"
                       sx={{
                         fontWeight: 700,

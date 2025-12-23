@@ -12,7 +12,7 @@ import {
 } from 'react-icons/md';
 import { BiCalendar } from 'react-icons/bi';
 import { FaBuilding, FaCity, FaLayerGroup, FaMap } from 'react-icons/fa';
-import { InputField, SelectField } from '../../components/Form.components';
+import { InputField, SelectField, TextArea } from '../../components/Form.components';
 // Section Components+
 
 // Constants
@@ -38,9 +38,10 @@ const BasicInfoSection = ({ formData, errors, handleChange }) => (
     <Accordion defaultExpanded>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <BusinessIcon sx={{ mr: 1 }} />
-            <Typography variant="h6">Informations de base</Typography>
+            <Typography variant="h6">Informations de base du business</Typography>
         </AccordionSummary>
         <AccordionDetails>
+
             <Grid container spacing={3}>
                     <Grid size={{md:4,sm:12,xs:12}}>
                     <InputField
@@ -90,14 +91,13 @@ const BasicInfoSection = ({ formData, errors, handleChange }) => (
                 <Grid size={{md:6,sm:12,xs:12}}>
                     <SelectField
                         label="Année de création"
-                        name="yearEstablished"
-                        
-                        value={formData.yearEstablished}
+                        name="year_established"
+                        value={formData.year_established}
                         onChange={handleChange}
                         prefixIcon={<BiCalendar />}
                         options={years}
-                        error={!!errors.yearEstablished}
-                        helperText={errors.yearEstablished}
+                        error={!!errors.year_established}
+                        helperText={errors.year_established}
                         isRequired
                     />
                 </Grid>
@@ -106,21 +106,22 @@ const BasicInfoSection = ({ formData, errors, handleChange }) => (
                     <InputField
                         prefix={<FaMap />}
                         label="Adresse complète"
-                        name="fullAddress"
+                        name="full_address"
                         fullWidth
-                        value={formData.fullAddress}
+                        value={formData.full_address}
                         onChange={handleChange}
                         placeholder="Ex: Avenue Charles de Gaulle, Secteur 12, Ouagadougou"
                     />
                 </Grid>
 
                 <Grid size={{md:6,sm:12,xs:12}}>
-                    <InputField
+                    <TextArea
                         fullWidth
-                        label="Description de l'entreprise *"
+                        label="Description de l'entreprise"
                         name="description"
                         multiline
-                        rows={4}
+                        rows={5}
+                        isRequired
                         value={formData.description}
                         onChange={handleChange}
                         error={!!errors.description}
@@ -130,13 +131,13 @@ const BasicInfoSection = ({ formData, errors, handleChange }) => (
                 </Grid>
 
                 <Grid size={{md:6,sm:12,xs:12}}>
-                    <InputField
+                    <TextArea
                         fullWidth
                         label="Informations supplémentaires"
-                        name="additionalInfo"
+                        name="additional_info"
                         multiline
-                        rows={4}
-                        value={formData.additionalInfo}
+                        rows={5}
+                        value={formData.additional_info}
                         onChange={handleChange}
                         placeholder="Informations utiles pour l'acheteur..."
                     />

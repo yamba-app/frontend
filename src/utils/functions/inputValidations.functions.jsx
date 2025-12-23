@@ -11,15 +11,15 @@ export const signInValidator = () => {
 export const businessValidator = () => {
     return Yup.object().shape({
         // Submitter/Contact Info
-        contactName: Yup.string()
+        contact_name: Yup.string()
             .required("Le nom de contact est obligatoire")
             .min(2, "Le nom doit contenir au moins 2 caractères"),
         
-        contactEmail: Yup.string()
+        contact_email: Yup.string()
             .notRequired().nullable()
             .email("Format d'email invalide"),
         
-        contactPhone: Yup.string()
+        contact_phone: Yup.string()
             .transform((value) => value.replace(/\D/g, "")) // Remove non-numeric characters
             .matches(/^\d{8,15}$/, "Numéro de téléphone invalide")
             .required("Le téléphone de contact est obligatoire"),
@@ -35,14 +35,14 @@ export const businessValidator = () => {
         location: Yup.string()
             .required("La localisation est obligatoire"),
         
-        fullAddress: Yup.string().nullable(),
+        full_address: Yup.string().nullable(),
         
         description: Yup.string()
             .required("La description est obligatoire")
             .min(50, "La description doit contenir au moins 50 caractères")
             .max(5000, "La description ne peut pas dépasser 5000 caractères"),
         
-        additionalInfo: Yup.string()
+        additional_info: Yup.string()
             .max(5000, "Les informations supplémentaires ne peuvent pas dépasser 5000 caractères")
             .nullable(),
 
@@ -53,7 +53,7 @@ export const businessValidator = () => {
         .required("Le prix est obligatoire"), 
 
 
-        yearEstablished: Yup.string()
+        year_established: Yup.string()
             .matches(/^(?:\d*\.?\d+)?$/, 'Année invalide') // Ensures it is a number
             .required("L'année de création est obligatoire")
             .max(new Date().getFullYear(), "L'année ne peut pas être dans le futur"),
@@ -64,12 +64,12 @@ export const businessValidator = () => {
             .min(1, "L'entreprise doit avoir au moins 1 employé")
             .max(1000000, "Nombre d'employés invalide"),
 
-        monthlyRevenue: Yup.string()
+        monthly_revenue: Yup.string()
             .matches(/^(?:\d*\.?\d+)?$/, 'Revenu mensuel invalide')
             .nullable(),
 
 
-        yearlyRevenue: Yup.string()
+        yearly_revenue: Yup.string()
             .matches(/^(?:\d*\.?\d+)?$/, 'Revenu annuel invalide')
             .nullable()
             .min(0, "Le revenu annuel doit être positif")

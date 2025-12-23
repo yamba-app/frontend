@@ -114,6 +114,7 @@ export function HomePage() {
                     sx={{
                         fontWeight: 'bold',
                         color: 'text.primary',
+                        fontSize: { xs: '2rem', sm: '3rem', md: '4rem' },
                         mb: 3
                     }}
                 >
@@ -128,6 +129,7 @@ export function HomePage() {
                         mb: 4,
                         maxWidth: '800px',
                         mx: 'auto',
+                        fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' },
                         lineHeight: 1.6
                     }}
                 >
@@ -146,9 +148,9 @@ export function HomePage() {
                             bgcolor: 'success.dark',
                         },
                         color: "white",
-                        px: 4,
+                        px: 2,
                         py: 2,
-                        fontSize: '1.1rem',
+                        fontSize: { xs: '1rem', sm: '1.25rem' },
                         fontWeight: 600,
                         boxShadow: 3,
                         borderRadius: 2

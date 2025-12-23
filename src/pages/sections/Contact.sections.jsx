@@ -16,7 +16,7 @@ const ContactSection = ({ formData, errors, handleChange }) => (
     <Accordion defaultExpanded>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <InfoIcon sx={{ mr: 1 }} />
-            <Typography variant="h6">Vos coordonnées</Typography>
+            <Typography variant="h6">Information du Responsable</Typography>
         </AccordionSummary>
         <AccordionDetails>
             <Grid container spacing={3}>
@@ -24,12 +24,12 @@ const ContactSection = ({ formData, errors, handleChange }) => (
                     <InputField
                         fullWidth
                         label="Votre nom"
-                        name="contactName"
+                        name="contact_name"
                         isRequired
-                        value={formData.contactName}
+                        value={formData.contact_name}
                         onChange={handleChange}
-                        error={!!errors.contactName}
-                        errorMessage={errors.contactName}
+                        error={!!errors.contact_name}
+                        errorMessage={errors.contact_name}
                         placeholder="Nom complet"
                     />
                 </Grid>
@@ -38,14 +38,14 @@ const ContactSection = ({ formData, errors, handleChange }) => (
                     <InputField
                         fullWidth
                         label="Téléphone"
-                        name="contactPhone"
+                        name="contact_phone"
                         isRequired
                         inputType={"phone"}
-                        value={formData.contactPhone}
+                        value={formData.contact_phone}
                         onChange={handleChange}
-                        error={!!errors.contactPhone}
-                        errorMessage={errors.contactPhone}
-                        placeholder="+226 70 XX XX XX"
+                        error={!!errors.contact_phone}
+                        errorMessage={errors.contact_phone}
+                        placeholder="70 XX XX XX"
                     />
                 </Grid>
 
@@ -53,12 +53,12 @@ const ContactSection = ({ formData, errors, handleChange }) => (
                     <InputField
                         fullWidth
                         label="Email "
-                        name="contactEmail"
+                        name="contact_email"
                         type="email"
-                        value={formData.contactEmail}
+                        value={formData.contact_email}
                         onChange={handleChange}
-                        error={!!errors.contactEmail}
-                        errorMessage={errors.contactEmail}
+                        error={!!errors.contact_email}
+                        errorMessage={errors.contact_email}
                         placeholder="votre@email.com"
                     />
                 </Grid>
