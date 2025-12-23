@@ -336,8 +336,12 @@ const Dashboard = () => {
           <Button
             variant="contained"
             startIcon={<FaPlus />}
+            onClick={() => navigate('/add-business')}
+            size='md'
             sx={{
               backgroundColor: '#2E7D32',
+              color: '#ffffff',
+              
               '&:hover': { backgroundColor: '#1B5E20' }
             }}
           >
