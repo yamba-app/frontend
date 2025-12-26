@@ -16,6 +16,7 @@ import Checkbox from '@mui/material/Checkbox';
 import ListItemText from '@mui/material/ListItemText';
 import Tooltip from '@mui/material/Tooltip';
 import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 
 
 export const InputField = ({
@@ -464,3 +465,97 @@ SelectField.propTypes = {
     prefixIcon: PropTypes.node, // Optional prefix icon for the select input
     showIconInValue: PropTypes.bool, // Control icon display in selected value
 };
+
+
+export const TextArea = ({
+  id,
+  label,
+  placeholder = '',
+  multiline = true,
+  maxRows,
+  rows,
+  isRequired = false,
+  defaultValue,
+  value = '',
+  onChange,
+  name,
+  error = false,
+  helperText = '',
+  variant = 'outlined',
+  maxWordCount = 400,
+  ...props
+}) => {
+  const [wordCount, setWordCount] = useState(() =>
+    value?.trim()?.split(/\s+/)?.filter(Boolean)?.length || 0
+  );
+  const [wordCountError, setWordCountError] = useState('');
+
+  const handleChange = (event) => {
+    const inputValue = event.target.value;
+    const count = inputValue.trim().split(/\s+/).filter(Boolean).length;
+
+    if (count > maxWordCount) {
+      setWordCountError(`Maximum word count of ${maxWordCount} exceeded.`);
+    } else {
+      setWordCountError('');
+    }
+
+    setWordCount(count);
+    onChange?.(event);
+  };
+
+  return (
+    <Box>
+      {label && (
+        <InputLabel htmlFor={id} sx={{ fontSize: 13, mb: 0.5 }}>
+          {label} {isRequired && <span style={{ color: 'red' }}>*</span>}
+        </InputLabel>
+      )}
+
+      <TextField
+        id={id}
+        name={name}
+        placeholder={placeholder}
+        multiline={multiline}
+        maxRows={maxRows}
+        rows={rows}
+        defaultValue={defaultValue}
+        value={value}
+        onChange={handleChange}
+        error={error || Boolean(wordCountError)}
+        helperText={wordCountError || helperText}
+        variant={variant}
+        fullWidth
+        {...props}
+      />
+
+      <Typography
+        variant="body2"
+        color={wordCount > maxWordCount ? 'error' : 'text.secondary'}
+        align="right"
+        mt={1}
+      >
+        {`Word Count: ${wordCount} / ${maxWordCount}`}
+      </Typography>
+    </Box>
+  );
+};
+
+TextArea.propTypes = {
+  id: PropTypes.string,
+  label: PropTypes.string.isRequired,
+  placeholder: PropTypes.string,
+  multiline: PropTypes.bool,
+  maxRows: PropTypes.number,
+  rows: PropTypes.number,
+  defaultValue: PropTypes.string,
+  value: PropTypes.string,
+  onChange: PropTypes.func,
+  name: PropTypes.string,
+  error: PropTypes.bool,
+  isRequired: PropTypes.bool,
+  helperText: PropTypes.string,
+  variant: PropTypes.oneOf(['outlined', 'filled', 'standard']),
+  maxWordCount: PropTypes.number,
+};
+

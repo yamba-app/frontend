@@ -37,9 +37,9 @@ const FinancialInfoSection = ({ formData, errors, handleChange, handleCurrencyCh
                 <Grid size={{md:4,sm:12,xs:12}}>
                     <InputField
                         label="CA mensuel (FCFA)"
-                        name="monthlyRevenue"
+                        name="monthly_revenue"
                         fullWidth
-                        value={formData.monthlyRevenue}
+                        value={formData.monthly_revenue}
                         onChange={handleCurrencyChange}
                         placeholder="500 000"
                     />
@@ -49,8 +49,8 @@ const FinancialInfoSection = ({ formData, errors, handleChange, handleCurrencyCh
                     <InputField
                         fullWidth
                         label="CA annuel (FCFA)"
-                        name="yearlyRevenue"
-                        value={formData.yearlyRevenue}
+                        name="yearly_revenue"
+                        value={formData.yearly_revenue}
                         onChange={handleCurrencyChange}
                         placeholder="6 000 000"
                     />

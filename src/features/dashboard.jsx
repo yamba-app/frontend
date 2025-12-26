@@ -266,7 +266,7 @@ const Dashboard = () => {
   
     const handleViewClick = (row) => {
       // Navigate to view page or open view modal
-      console.log('View business:', row);
+     navigate(`/admin/businesses/view/${row?.id}`);
       // Example: navigate(`/admin/businesses/${row.id}`);
     };
   
@@ -336,8 +336,12 @@ const Dashboard = () => {
           <Button
             variant="contained"
             startIcon={<FaPlus />}
+            onClick={() => navigate('/add-business')}
+            size='md'
             sx={{
               backgroundColor: '#2E7D32',
+              color: '#ffffff',
+              
               '&:hover': { backgroundColor: '#1B5E20' }
             }}
           >
@@ -661,6 +665,7 @@ const Dashboard = () => {
               business={statusModal.business}
               isLoading={statusMutation.isPending}
             />
+            {ToastComponent}
     </Box>
   );
 };

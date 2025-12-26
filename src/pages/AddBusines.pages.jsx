@@ -14,32 +14,27 @@ import {
     IconButton,
     Alert,
     Chip,
-    MenuItem,
-    FormControl,
-    InputLabel,
-    Select,
     Accordion,
     AccordionSummary,
     AccordionDetails,
-    Container
+    Container,
+    CircularProgress
 } from '@mui/material';
 import {
     MdAdd as PlusIcon,
     MdClose as CloseIcon,
-    MdCloudUpload as UploadIcon,
     MdImage as ImageIcon,
     MdVideoLibrary as VideoIcon,
     MdExpandMore as ExpandMoreIcon,
     MdBusiness as BusinessIcon,
     MdAttachMoney as MoneyIcon,
     MdPeople as PeopleIcon,
-    MdInfo as InfoIcon,
-    MdWarning as WarningIcon,
-    MdCheck as CheckIcon
+    MdInfo as InfoIcon
 } from 'react-icons/md';
-import { InputField, SelectField } from '../components/Form.components';
+import { InputField, SelectField, TextArea } from '../components/Form.components';
 import { BiCalendar } from 'react-icons/bi';
 import { FaBuilding, FaCity, FaLayerGroup, FaMap } from 'react-icons/fa';
+import axios from 'axios';
 
 const businessCategories = [
     { key: 'RESTAURANT', value: 'Restaurant' },
@@ -62,48 +57,43 @@ const years = Array.from({ length: 50 }, (_, i) => {
 
 const BusinessFormPage = ({ onSubmit, onClose }) => {
     const [formData, setFormData] = useState({
-        // Basic Information
         name: '',
         category: '',
         location: '',
-        fullAddress: '',
+        full_address: '',
         description: '',
-        additionalInfo: '',
+        additional_info: '',
         price: '',
-
-        // Business Details
-        yearEstablished: '',
+        year_established: '',
         employees: '',
-        monthlyRevenue: '',
-        yearlyRevenue: '',
-
-        // Assets and Advantages
+        monthly_revenue: '',
+        yearly_revenue: '',
         assets: [],
         newAsset: '',
         advantages: [],
         newAdvantage: '',
         reasons: '',
-
-        // Contact Information
-        contactName: '',
-        contactPhone: '',
-        contactEmail: '',
-
-        // Media
-        photos: [],
-        videos: []
+        submitter_name: '',
+        submitter_phone: '',
+        submitter_email: '',
+        photoFiles: [], // Store actual File objects
+        videoFiles: []  // Store actual File objects
     });
 
+    const [photosPreviews, setPhotosPreviews] = useState([]);
+    const [videosPreviews, setVideosPreviews] = useState([]);
     const [errors, setErrors] = useState({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         // Validation
         const newErrors = {};
         const requiredFields = [
             'name', 'category', 'location', 'description', 'price',
-            'yearEstablished', 'employees', 'contactName', 'contactPhone', 'contactEmail'
+            'year_established', 'employees', 'submitter_name',
+            'submitter_phone', 'submitter_email'
         ];
 
         requiredFields.forEach(field => {
@@ -123,55 +113,80 @@ const BusinessFormPage = ({ onSubmit, onClose }) => {
         setErrors(newErrors);
 
         if (Object.keys(newErrors).length === 0) {
-            // Transform form data to match the business structure
-            const businessData = {
-                name: formData.name,
-                category: formData.category,
-                location: formData.location,
-                fullAddress: formData.fullAddress,
-                description: formData.description,
-                additionalInfo: formData.additionalInfo,
-                price: parseInt(formData.price.replace(/[^0-9]/g, '')),
-                yearEstablished: parseInt(formData.yearEstablished),
-                status: 'PENDING',
-                datePosted: new Date().toLocaleDateString('fr-FR'),
-                businessNumber: `BF${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`,
+            setIsSubmitting(true);
 
-                photos: formData.photos,
-                videos: formData.videos,
+            try {
+                // Create FormData for file uploads
+                const submitData = new FormData();
 
-                owner: {
-                    name: formData.contactName,
-                    phone: formData.contactPhone,
-                    email: formData.contactEmail,
-                    memberSince: new Date().getFullYear().toString()
-                },
+                // Add text fields
+                submitData.append('name', formData.name);
+                submitData.append('category', formData.category);
+                submitData.append('location', formData.location);
+                submitData.append('full_address', formData.full_address);
+                submitData.append('description', formData.description);
+                submitData.append('additional_info', formData.additional_info);
+                submitData.append('price', formData.price.replace(/[^0-9]/g, ''));
+                submitData.append('year_established', formData.year_established);
+                submitData.append('employees', formData.employees);
+                submitData.append('monthly_revenue', formData.monthly_revenue.replace(/[^0-9]/g, '') || '0');
+                submitData.append('yearly_revenue', formData.yearly_revenue.replace(/[^0-9]/g, '') || '0');
+                submitData.append('reasons', formData.reasons);
+                submitData.append('submitter_name', formData.submitter_name);
+                submitData.append('submitter_phone', formData.submitter_phone);
+                submitData.append('submitter_email', formData.submitter_email);
 
-                businessDetails: {
-                    employees: parseInt(formData.employees),
-                    monthlyRevenue: formData.monthlyRevenue ? parseInt(formData.monthlyRevenue.replace(/[^0-9]/g, '')) : 0,
-                    yearlyRevenue: formData.yearlyRevenue ? parseInt(formData.yearlyRevenue.replace(/[^0-9]/g, '')) : 0,
-                    assets: formData.assets,
-                    reasons: formData.reasons,
-                    advantages: formData.advantages
+                // Add arrays as JSON strings
+                submitData.append('assets', JSON.stringify(formData.assets));
+                submitData.append('advantages', JSON.stringify(formData.advantages));
+
+                // Add photo files
+                formData.photoFiles.forEach((file, index) => {
+                    submitData.append(`photos[${index}]`, file);
+                });
+
+                // Add video files
+                formData.videoFiles.forEach((file, index) => {
+                    submitData.append(`videos[${index}]`, file);
+                });
+
+                // Send to API
+                const response = await axios.post('/api/busines/submit', submitData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                });
+
+                if (response.data.success) {
+                    alert('Votre entreprise a été soumise avec succès ! Elle sera examinée par notre équipe avant publication.');
+                    resetForm();
+                    if (onClose) onClose();
+                    if (onSubmit) onSubmit(response.data.data);
                 }
-            };
+            } catch (error) {
+                console.error('Submission error:', error);
 
-            onSubmit(businessData);
-            resetForm();
-            onClose();
-            alert('Votre entreprise a été soumise avec succès ! Elle sera examinée par notre équipe avant publication.');
+                if (error.response?.data?.errors) {
+                    setErrors(error.response.data.errors);
+                } else {
+                    alert(error.response?.data?.message || 'Une erreur est survenue lors de la soumission');
+                }
+            } finally {
+                setIsSubmitting(false);
+            }
         }
     };
 
     const resetForm = () => {
         setFormData({
-            name: '', category: '', location: '', fullAddress: '', description: '',
-            additionalInfo: '', price: '', yearEstablished: '', employees: '',
-            monthlyRevenue: '', yearlyRevenue: '', assets: [], newAsset: '',
-            advantages: [], newAdvantage: '', reasons: '', contactName: '',
-            contactPhone: '', contactEmail: '', photos: [], videos: []
+            name: '', category: '', location: '', full_address: '', description: '',
+            additional_info: '', price: '', year_established: '', employees: '',
+            monthly_revenue: '', yearly_revenue: '', assets: [], newAsset: '',
+            advantages: [], newAdvantage: '', reasons: '', submitter_name: '',
+            submitter_phone: '', submitter_email: '', photoFiles: [], videoFiles: []
         });
+        setPhotosPreviews([]);
+        setVideosPreviews([]);
         setErrors({});
     };
 
@@ -179,7 +194,6 @@ const BusinessFormPage = ({ onSubmit, onClose }) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
 
-        // Clear error when user starts typing
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: '' }));
         }
@@ -227,24 +241,52 @@ const BusinessFormPage = ({ onSubmit, onClose }) => {
 
     const handleFileUpload = (e, type) => {
         const files = Array.from(e.target.files);
-        const fileData = files.map(file => ({
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            url: URL.createObjectURL(file)
-        }));
 
-        setFormData(prev => ({
-            ...prev,
-            [type]: [...prev[type], ...fileData]
-        }));
+        if (type === 'photos') {
+            setFormData(prev => ({
+                ...prev,
+                photoFiles: [...prev.photoFiles, ...files]
+            }));
+
+            const previews = files.map(file => ({
+                name: file.name,
+                size: file.size,
+                url: URL.createObjectURL(file)
+            }));
+
+            setPhotosPreviews(prev => [...prev, ...previews]);
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                videoFiles: [...prev.videoFiles, ...files]
+            }));
+
+            const previews = files.map(file => ({
+                name: file.name,
+                size: file.size,
+                url: URL.createObjectURL(file)
+            }));
+
+            setVideosPreviews(prev => [...prev, ...previews]);
+        }
     };
 
     const removeFile = (index, type) => {
-        setFormData(prev => ({
-            ...prev,
-            [type]: prev[type].filter((_, i) => i !== index)
-        }));
+        if (type === 'photos') {
+            URL.revokeObjectURL(photosPreviews[index].url);
+            setFormData(prev => ({
+                ...prev,
+                photoFiles: prev.photoFiles.filter((_, i) => i !== index)
+            }));
+            setPhotosPreviews(prev => prev.filter((_, i) => i !== index));
+        } else {
+            URL.revokeObjectURL(videosPreviews[index].url);
+            setFormData(prev => ({
+                ...prev,
+                videoFiles: prev.videoFiles.filter((_, i) => i !== index)
+            }));
+            setVideosPreviews(prev => prev.filter((_, i) => i !== index));
+        }
     };
 
     const formatFileSize = (bytes) => {
@@ -267,8 +309,6 @@ const BusinessFormPage = ({ onSubmit, onClose }) => {
     };
 
     return (
-
-
         <Container maxWidth="lg" sx={{ py: 4 }}>
             <Alert severity="info" sx={{ mb: 3 }}>
                 <Typography variant="body2">
@@ -290,7 +330,7 @@ const BusinessFormPage = ({ onSubmit, onClose }) => {
                                     fullWidth
                                     label="Nom de l'entreprise"
                                     name="name"
-                                    prefix={<FaBuilding/>}
+                                    prefix={<FaBuilding />}
                                     value={formData.name}
                                     onChange={handleChange}
                                     error={!!errors.name}
@@ -302,9 +342,10 @@ const BusinessFormPage = ({ onSubmit, onClose }) => {
 
                             <Grid size={{ md: 4, sm: 12, xs: 12 }}>
                                 <SelectField
-                                    label={"Category"}
-                                    name={"category"}
-                                    prefixIcon={<FaLayerGroup/>}
+                                    label="Catégorie"
+                                    name="category"
+                                    prefixIcon={<FaLayerGroup />}
+                                    value={formData.category}
                                     onChange={handleChange}
                                     searchPlaceholder='Recherche'
                                     options={businessCategories}
@@ -321,7 +362,7 @@ const BusinessFormPage = ({ onSubmit, onClose }) => {
                                     name="location"
                                     isRequired
                                     value={formData.location}
-                                    prefix={<FaCity/>}
+                                    prefix={<FaCity />}
                                     onChange={handleChange}
                                     error={!!errors.location}
                                     errorMessage={errors.location}
@@ -331,12 +372,15 @@ const BusinessFormPage = ({ onSubmit, onClose }) => {
 
                             <Grid size={{ md: 6, sm: 12, xs: 12 }}>
                                 <SelectField
-                                    label={"Année de création"}
+                                    label="Année de création"
                                     onChange={handleChange}
-                                    name="yearEstablished"
+                                    name="year_established"
+                                    value={formData.year_established}
                                     searchPlaceholder='Recherche'
                                     prefixIcon={<BiCalendar />}
                                     options={years}
+                                    error={!!errors.year_established}
+                                    helperText={errors.year_established}
                                     isRequired
                                 />
                             </Grid>
@@ -344,40 +388,41 @@ const BusinessFormPage = ({ onSubmit, onClose }) => {
                             <Grid size={{ md: 6, sm: 12, xs: 12 }}>
                                 <InputField
                                     fullWidth
-                                    prefix={<FaMap/>}
+                                    prefix={<FaMap />}
                                     label="Adresse complète"
-                                    name="fullAddress"
-                                    value={formData.fullAddress}
+                                    name="full_address"
+                                    value={formData.full_address}
                                     onChange={handleChange}
-                                    placeholder="Ex: Avenue Charles de Gaulle, Secteur 12, Ouagadougou"
+                                    placeholder="Ex: Avenue Charles de Gaulle, Secteur 12"
                                 />
                             </Grid>
 
                             <Grid size={{ md: 6, sm: 12, xs: 12 }}>
-                                <TextField
+                                <TextArea
                                     fullWidth
-                                    label="Description de l'entreprise *"
+                                    label="Description de l'entreprise"
                                     name="description"
                                     multiline
                                     rows={4}
+                                    isRequired
                                     value={formData.description}
                                     onChange={handleChange}
                                     error={!!errors.description}
                                     helperText={errors.description}
-                                    placeholder="Décrivez votre entreprise: type d'activité, spécialités, clientèle..."
+                                    placeholder="Décrivez votre entreprise..."
                                 />
                             </Grid>
 
-                            <Grid size={{ md: 6, sm: 12, xs: 12 }}>
-                                <TextField
+                            <Grid size={{ md: 6, sm: 12, xs: 12 }} >
+                                <TextArea
                                     fullWidth
                                     label="Informations supplémentaires"
-                                    name="additionalInfo"
+                                    name="additional_info"
                                     multiline
                                     rows={4}
-                                    value={formData.additionalInfo}
+                                    value={formData.additional_info}
                                     onChange={handleChange}
-                                    placeholder="Informations utiles pour l'acheteur..."
+                                    placeholder="Informations utiles..."
                                 />
                             </Grid>
                         </Grid>
@@ -385,7 +430,7 @@ const BusinessFormPage = ({ onSubmit, onClose }) => {
                 </Accordion>
 
                 {/* Financial Information */}
-                <Accordion expanded> 
+                <Accordion defaultExpanded>
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                         <MoneyIcon sx={{ mr: 1 }} />
                         <Typography variant="h6">Informations financières</Typography>
@@ -406,50 +451,50 @@ const BusinessFormPage = ({ onSubmit, onClose }) => {
                                 />
                             </Grid>
 
-                            <Grid size={{ md: 4, sm: 12, xs: 12 }}>
+                            <Grid size={{ md: 4, sm: 12, xs: 12 }} >
                                 <InputField
                                     fullWidth
                                     label="CA mensuel (FCFA)"
-                                    name="monthlyRevenue"
-                                    value={formData.monthlyRevenue}
+                                    name="monthly_revenue"
+                                    value={formData.monthly_revenue}
                                     onChange={handleCurrencyChange}
                                     placeholder="500 000"
                                 />
                             </Grid>
 
-                            <Grid size={{ md: 4, sm: 12, xs: 12 }}>
-                                <TextField
+                            <Grid size={{ md: 4, sm: 12, xs: 12 }} >
+                                <InputField
                                     fullWidth
                                     label="CA annuel (FCFA)"
-                                    name="yearlyRevenue"
-                                    value={formData.yearlyRevenue}
+                                    name="yearly_revenue"
+                                    value={formData.yearly_revenue}
                                     onChange={handleCurrencyChange}
                                     placeholder="6 000 000"
                                 />
                             </Grid>
 
-                            <Grid size={{ md: 6, sm: 12, xs: 12 }}>
-                                <TextField
+                            <Grid size={{ md: 4, sm: 12, xs: 12 }} >
+                                <InputField
                                     fullWidth
-                                    label="Nombre d'employés *"
+                                    label="Nombre d'employés"
                                     name="employees"
                                     type="number"
                                     value={formData.employees}
                                     onChange={handleChange}
                                     error={!!errors.employees}
-                                    helperText={errors.employees}
+                                    errorMessage={errors.employees}
                                     placeholder="5"
                                 />
                             </Grid>
 
                             <Grid size={{ md: 6, sm: 12, xs: 12 }}>
-                                <TextField
+                                <InputField
                                     fullWidth
                                     label="Raison de la vente"
                                     name="reasons"
                                     value={formData.reasons}
                                     onChange={handleChange}
-                                    placeholder="Ex: Déménagement, retraite, nouveau projet..."
+                                    placeholder="Ex: Déménagement, retraite..."
                                 />
                             </Grid>
                         </Grid>
@@ -464,7 +509,7 @@ const BusinessFormPage = ({ onSubmit, onClose }) => {
                     </AccordionSummary>
                     <AccordionDetails>
                         <Grid container spacing={3}>
-                            <Grid size={{ md: 12, sm: 12, xs: 12 }}>
+                            <Grid size={{ xs: 12 }}>
                                 <Typography variant="subtitle1" gutterBottom>
                                     Équipements et actifs inclus *
                                 </Typography>
@@ -474,8 +519,8 @@ const BusinessFormPage = ({ onSubmit, onClose }) => {
                                         label="Ajouter un équipement"
                                         value={formData.newAsset}
                                         onChange={(e) => setFormData(prev => ({ ...prev, newAsset: e.target.value }))}
-                                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addAsset())}
-                                        placeholder="Ex: Équipement de cuisine, Mobilier..."
+                                        onKeyUp={(e) => e.key === 'Enter' && (e.preventDefault(), addAsset())}
+                                        placeholder="Ex: Équipement de cuisine..."
                                     />
                                     <Button variant="outlined" onClick={addAsset} startIcon={<PlusIcon />}>
                                         Ajouter
@@ -501,7 +546,7 @@ const BusinessFormPage = ({ onSubmit, onClose }) => {
                                 )}
                             </Grid>
 
-                            <Grid size={{ md: 12, sm: 12, xs: 12 }}>
+                            <Grid size={{ xs: 12 }}>
                                 <Typography variant="subtitle1" gutterBottom>
                                     Avantages de votre entreprise *
                                 </Typography>
@@ -511,8 +556,8 @@ const BusinessFormPage = ({ onSubmit, onClose }) => {
                                         label="Ajouter un avantage"
                                         value={formData.newAdvantage}
                                         onChange={(e) => setFormData(prev => ({ ...prev, newAdvantage: e.target.value }))}
-                                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addAdvantage())}
-                                        placeholder="Ex: Emplacement stratégique, Clientèle fidèle..."
+                                        onKeyUp={(e) => e.key === 'Enter' && (e.preventDefault(), addAdvantage())}
+                                        placeholder="Ex: Emplacement stratégique..."
                                     />
                                     <Button variant="outlined" onClick={addAdvantage} startIcon={<PlusIcon />}>
                                         Ajouter
@@ -549,7 +594,7 @@ const BusinessFormPage = ({ onSubmit, onClose }) => {
                     </AccordionSummary>
                     <AccordionDetails>
                         <Grid container spacing={3}>
-                            <Grid size={{ md: 6, sm: 12, xs: 12 }}>
+                            <Grid size={{ xs: 12, sm: 12, md: 6 }}>
                                 <Typography variant="subtitle1" sx={{ mb: 2 }}>
                                     Photos de l'entreprise
                                 </Typography>
@@ -572,7 +617,7 @@ const BusinessFormPage = ({ onSubmit, onClose }) => {
                                         type="file"
                                         onChange={(e) => handleFileUpload(e, 'photos')}
                                     />
-                                    <label htmlFor="photo-upload">
+                                    <label htmlFor="photo-upload" style={{ cursor: 'pointer' }}>
                                         <ImageIcon sx={{ fontSize: 48, color: 'grey.500', mb: 2 }} />
                                         <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
                                             Cliquez pour ajouter des photos
@@ -583,9 +628,9 @@ const BusinessFormPage = ({ onSubmit, onClose }) => {
                                     </label>
                                 </Paper>
 
-                                {formData.photos.length > 0 && (
+                                {photosPreviews.length > 0 && (
                                     <List sx={{ mt: 2 }}>
-                                        {formData.photos.map((photo, index) => (
+                                        {photosPreviews.map((photo, index) => (
                                             <ListItem key={index}>
                                                 <ListItemIcon><ImageIcon color="success" /></ListItemIcon>
                                                 <ListItemText
@@ -603,7 +648,7 @@ const BusinessFormPage = ({ onSubmit, onClose }) => {
                                 )}
                             </Grid>
 
-                            <Grid size={{ md: 6, sm: 12, xs: 12 }}>
+                            <Grid size={{ xs: 12, sm: 12, md: 6 }}>
                                 <Typography variant="subtitle1" sx={{ mb: 2 }}>
                                     Vidéos de l'entreprise
                                 </Typography>
@@ -626,7 +671,7 @@ const BusinessFormPage = ({ onSubmit, onClose }) => {
                                         type="file"
                                         onChange={(e) => handleFileUpload(e, 'videos')}
                                     />
-                                    <label htmlFor="video-upload">
+                                    <label htmlFor="video-upload" style={{ cursor: 'pointer' }}>
                                         <VideoIcon sx={{ fontSize: 48, color: 'grey.500', mb: 2 }} />
                                         <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
                                             Cliquez pour ajouter des vidéos
@@ -637,9 +682,9 @@ const BusinessFormPage = ({ onSubmit, onClose }) => {
                                     </label>
                                 </Paper>
 
-                                {formData.videos.length > 0 && (
+                                {videosPreviews.length > 0 && (
                                     <List sx={{ mt: 2 }}>
-                                        {formData.videos.map((video, index) => (
+                                        {videosPreviews.map((video, index) => (
                                             <ListItem key={index}>
                                                 <ListItemIcon><VideoIcon color="success" /></ListItemIcon>
                                                 <ListItemText
@@ -668,52 +713,69 @@ const BusinessFormPage = ({ onSubmit, onClose }) => {
                     </AccordionSummary>
                     <AccordionDetails>
                         <Grid container spacing={3}>
-                            <Grid size={{ md: 4, sm: 12, xs: 12 }}>
+                            <Grid size={{ xs: 12, sm: 12, md: 4 }}>
                                 <TextField
                                     fullWidth
                                     label="Votre nom *"
-                                    name="contactName"
-                                    value={formData.contactName}
+                                    name="submitter_name"
+                                    value={formData.submitter_name}
                                     onChange={handleChange}
-                                    error={!!errors.contactName}
-                                    helperText={errors.contactName}
+                                    error={!!errors.submitter_name}
+                                    helperText={errors.submitter_name}
                                     placeholder="Nom complet"
                                 />
                             </Grid>
 
-                            <Grid size={{ md: 4, sm: 12, xs: 12 }}>
+                            <Grid size={{ xs: 12, sm: 12, md: 4 }}>
                                 <TextField
                                     fullWidth
                                     label="Téléphone *"
-                                    name="contactPhone"
-                                    value={formData.contactPhone}
+                                    name="submitter_phone"
+                                    value={formData.submitter_phone}
                                     onChange={handleChange}
-                                    error={!!errors.contactPhone}
-                                    helperText={errors.contactPhone}
+                                    error={!!errors.submitter_phone}
+                                    helperText={errors.submitter_phone}
                                     placeholder="+226 70 XX XX XX"
                                 />
                             </Grid>
 
-                            <Grid size={{ md: 4, sm: 12, xs: 12 }}>
+                            <Grid size={{ xs: 12, sm: 12, md: 4 }}>
                                 <TextField
                                     fullWidth
                                     label="Email *"
-                                    name="contactEmail"
+                                    name="submitter_email"
                                     type="email"
-                                    value={formData.contactEmail}
+                                    value={formData.submitter_email}
                                     onChange={handleChange}
-                                    error={!!errors.contactEmail}
-                                    helperText={errors.contactEmail}
+                                    error={!!errors.submitter_email}
+                                    helperText={errors.submitter_email}
                                     placeholder="votre@email.com"
                                 />
                             </Grid>
                         </Grid>
                     </AccordionDetails>
                 </Accordion>
+
+                {/* Submit Button */}
+                <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+                    {onClose && (
+                        <Button variant="outlined" onClick={onClose} disabled={isSubmitting}>
+                            Annuler
+                        </Button>
+                    )}
+                    <Button
+                        type="submit"
+                        variant="contained"
+                        color="primary"
+                        disabled={isSubmitting}
+                        startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
+                    >
+                        {isSubmitting ? 'Envoi en cours...' : 'Soumettre l\'entreprise'}
+                    </Button>
+                </Box>
             </Box>
         </Container>
-
-
     );
 }
-export default BusinessFormPage
+
+export default BusinessFormPage;

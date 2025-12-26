@@ -52,21 +52,21 @@ export function AboutPage() {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box sx={{ textAlign: 'center', mb: 6 }}>
-        <Typography variant="h2" component="h1" sx={{ fontWeight: 'bold', mb: 2 }}>
+        <Typography variant="h2" component="h1" sx={{ fontWeight: 'bold', mb: 2 , fontSize: { xs: '2.2rem', md: '3.5rem' }}}>
           Qui nous sommes
         </Typography>
-        <Typography variant="h5" color="text.secondary">
+        <Typography variant="h5" sx={{fontSize:{md:"1.9rem", sm:"1rem"}}} color="text.secondary">
           VenteAffaires BF - Votre partenaire de confiance pour l'achat et la vente d'entreprises au Burkina Faso
         </Typography>
       </Box>
 
-      <Paper elevation={3} sx={{ p: 4, mb: 4 }}>
-        <Typography variant="h4" component="h2" sx={{ fontWeight: 'bold', mb: 3 }}>
+      <Paper elevation={3} sx={{ p: 2, mb: 4 }}>
+        <Typography variant="h4" component="h2" sx={{ fontWeight: 'bold', mb: 3 ,fontSize: { xs: '2rem', md: '3.5rem' }}}>
           Notre Mission
         </Typography>
         <Grid container spacing={4}>
           {missionItems.map((item, index) => (
-            <Grid item xs={12} md={6} key={index}>
+            <Grid size={{md:6,sm:12}} key={index}>
               <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                 <Box
                   sx={{
@@ -77,14 +77,14 @@ export function AboutPage() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    minWidth: 48,
-                    height: 48
+                    minWidth: 40,
+                    height: 40
                   }}
                 >
                   {item.icon}
                 </Box>
                 <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 'semibold', mb: 1 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 'semibold', mb: 1, fontSize: { xs: '0.9rem', md: '1.5rem' } }}>
                     {item.title}
                   </Typography>
                   <Typography variant="body1" color="text.secondary">
@@ -100,23 +100,23 @@ export function AboutPage() {
       <Paper 
         elevation={1} 
         sx={{ 
-          p: 4, 
+          p: 2, 
           mb: 4, 
           
           bgcolor: theme.palette.success.light,
           '& .MuiTypography-root': {
-            color: theme.palette.success.contrastText
+            color: "white"
           }
         }}
       >
-        <Typography variant="h4" component="h2" sx={{ fontWeight: 'bold', mb: 3,color:"white" }}>
+        <Typography variant="h4" component="h2" sx={{ fontWeight: 'bold', mb: 3,color:"white", fontSize: { xs: '2rem', md: '3.5rem' } }}>
           Pourquoi choisir VenteAffaires BF ?
         </Typography>
         <List>
           {advantages.map((advantage, index) => (
             <ListItem key={index} sx={{ px: 0, color:"white" }} >
               <ListItemIcon>
-                <CheckIcon color={"white"} size={"24"} />
+                <CheckIcon color={"white"} size={"20"} />
               </ListItemIcon>
               <ListItemText 
                 primary={advantage}
@@ -137,7 +137,7 @@ export function AboutPage() {
         <Typography variant="h4" component="h2" sx={{ fontWeight: 'bold', mb: 2 }}>
           Notre Engagement
         </Typography>
-        <Typography variant="h6" sx={{ lineHeight: 1.6 }}>
+        <Typography  sx={{ lineHeight: 1.6 }}>
           Chez VenteAffaires BF, nous croyons que chaque entrepreneur mérite une plateforme simple et efficace 
           pour faire prospérer ses affaires. Nous nous engageons à maintenir cette plateforme accessible, 
           sécurisée et adaptée aux besoins spécifiques du marché burkinabè.

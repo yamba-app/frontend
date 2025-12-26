@@ -147,7 +147,7 @@ const useToast = () => {
       {toast.open && (
         <Snackbar
           open={toast.open}
-          autoHideDuration={5000}
+          autoHideDuration={2000}
           onClose={handleClose}
           anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
           sx={{

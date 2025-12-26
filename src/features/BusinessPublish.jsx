@@ -183,13 +183,12 @@ const BusinessPublish = () => {
 
   const handleViewClick = (row) => {
     // Navigate to view page or open view modal
-    console.log('View business:', row);
-    // Example: navigate(`/admin/businesses/${row.id}`);
+     navigate(`/admin/businesses/view/${row?.id}`);
   };
 
   const handleEditClick = (row) => {
       // Navigate to edit page or open edit modal
-     navigate(`/admin/businesses/${row.id}`);
+     navigate(`/admin/businesses/${row?.id}`);
     };
   
 

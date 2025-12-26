@@ -40,7 +40,8 @@ const useRefreshToken = () => {
                     ...prev,
                     role: response.data.role, // Update user roles
                     accessToken: newToken, // Update access token
-                    refreshToken: refreshToken
+                    refreshToken: refreshToken,
+                    user: response.data.user, // Update user info
                 }));
                 return newToken; // Return the new access token
 

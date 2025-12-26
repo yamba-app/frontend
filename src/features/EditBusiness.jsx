@@ -38,26 +38,26 @@ const EditBusiness = () => {
         name: '',
         category: '',
         location: '',
-        fullAddress: '',
         description: '',
-        additionalInfo: '',
         price: '',
-        yearEstablished: '',
         employees: '',
-        monthlyRevenue: '',
-        yearlyRevenue: '',
         assets: [],
         newAsset: '',
         advantages: [],
         newAdvantage: '',
         reasons: '',
-        contactName: '',
-        contactPhone: '',
-        contactEmail: '',
         photos: [],
         videos: [],
         existingPhotos: [],
         existingVideos: [],
+        full_address: '',
+        additional_info: '',
+        year_established: '2023',
+        monthly_revenue: '',
+        yearly_revenue: '',
+        contact_name: '',
+        contact_phone: '',
+        contact_email: '',
     });
 
     const [errors, setErrors] = useState({});
@@ -80,22 +80,22 @@ const EditBusiness = () => {
                 name: business.name || '',
                 category: business.category || '',
                 location: business.location || '',
-                fullAddress: business.fullAddress || '',
+                full_address: business.fullAddress || '',
                 description: business.description || '',
-                additionalInfo: business.additionalInfo || '',
+                additional_info: business.additionalInfo || '',
                 price: business.price ? formatCurrency(business.price.toString()) : '',
-                yearEstablished: business.yearEstablished?.toString() || '',
+                year_established: business.yearEstablished?.toString() || '',
                 employees: business.employees?.toString() || '',
-                monthlyRevenue: business.monthlyRevenue ? formatCurrency(business.monthlyRevenue.toString()) : '',
-                yearlyRevenue: business.yearlyRevenue ? formatCurrency(business.yearlyRevenue.toString()) : '',
+                monthly_revenue: business.monthlyRevenue ? formatCurrency(business.monthlyRevenue.toString()) : '',
+                yearly_revenue: business.yearlyRevenue ? formatCurrency(business.yearlyRevenue.toString()) : '',
                 assets: business.assets || [],
                 newAsset: '',
                 advantages: business.advantages || [],
                 newAdvantage: '',
                 reasons: business.reasons || '',
-                contactName: business.contactName || business.submitterName || '',
-                contactPhone: business.contactPhone || business.submitterPhone || '',
-                contactEmail: business.contactEmail || business.submitterEmail || '',
+                contact_name: business.contactName || business.submitterName || '',
+                contact_phone: business.contactPhone || business.submitterPhone || '',
+                contact_email: business.contactEmail || business.submitterEmail || '',
                 photos: [],
                 videos: [],
                 existingPhotos: business.photos || [],
@@ -299,10 +299,10 @@ const EditBusiness = () => {
             const dataToValidate = {
                 ...formData,
                 price: formData.price ? parseInt(formData.price.replace(/[^0-9]/g, '')) : null,
-                yearEstablished: formData.yearEstablished ? parseInt(formData.yearEstablished) : null,
+                year_established: formData.year_established ? parseInt(formData.year_established) : null,
                 employees: formData.employees ? parseInt(formData.employees) : null,
-                monthlyRevenue: formData.monthlyRevenue ? parseInt(formData.monthlyRevenue.replace(/[^0-9]/g, '')) : null,
-                yearlyRevenue: formData.yearlyRevenue ? parseInt(formData.yearlyRevenue.replace(/[^0-9]/g, '')) : null,
+                monthly_revenue: formData.monthly_revenue ? parseInt(formData.monthly_revenue.replace(/[^0-9]/g, '')) : null,
+                yearly_revenue: formData.yearly_revenue ? parseInt(formData.yearly_revenue.replace(/[^0-9]/g, '')) : null,
             };
 
             // Client-side validation
@@ -316,20 +316,20 @@ const EditBusiness = () => {
 
             // Basic fields
             const fieldMappings = {
-                'submitter_name': formData.contactName,
-                'submitter_email': formData.contactEmail,
-                'submitter_phone': formData.contactPhone,
+                'submitter_name': formData.contact_name,
+                'submitter_email': formData.contact_email,
+                'submitter_phone': formData.contact_phone,
                 'name': formData.name,
                 'category': formData.category,
                 'location': formData.location,
-                'full_address': formData.fullAddress,
+                'full_address': formData.full_address,
                 'description': formData.description,
-                'additional_info': formData.additionalInfo || '',
+                'additional_info': formData.additional_info || '',
                 'price': parseInt(formData.price.replace(/[^0-9]/g, '')),
                 'reasons': formData.reasons || '',
-                'contact_name': formData.contactName,
-                'contact_phone': formData.contactPhone,
-                'contact_email': formData.contactEmail,
+                'contact_name': formData.contact_name,
+                'contact_phone': formData.contact_phone,
+                'contact_email': formData.contact_email,
             };
 
             Object.entries(fieldMappings).forEach(([key, value]) => {
@@ -338,10 +338,10 @@ const EditBusiness = () => {
 
             // Optional numeric fields
             const optionalFields = [
-                { key: 'year_established', value: formData.yearEstablished },
+                { key: 'year_established', value: formData.year_established },
                 { key: 'employees', value: formData.employees },
-                { key: 'monthly_revenue', value: formData.monthlyRevenue },
-                { key: 'yearly_revenue', value: formData.yearlyRevenue },
+                { key: 'monthly_revenue', value: formData.monthly_revenue },
+                { key: 'yearly_revenue', value: formData.yearly_revenue },
             ];
 
             optionalFields.forEach(({ key, value }) => {
@@ -386,7 +386,34 @@ const EditBusiness = () => {
                 });
                 setErrors(validationErrors);
                 scrollToFirstError(validationErrors);
-            } else {
+            }else if (error.response?.data?.errors) {
+            // MAP BACKEND ERRORS TO FRONTEND FIELD NAMES
+            const backendErrors = error.response.data.errors;
+            const mappedErrors = {};
+            
+            const fieldMapping = {
+                'full_address': 'full_address',
+                'additional_info': 'additional_info',
+                'year_established': 'year_established',
+                'monthly_revenue': 'monthly_revenue',
+                'yearly_revenue': 'yearly_revenue',
+                'contact_name': 'contact_name',
+                'contact_phone': 'contact_phone',
+                'contact_email': 'contact_email',
+                'submitter_name': 'submitter_name',
+                'submitter_email': 'submitter_email',
+                'submitter_phone': 'submitter_phone',
+            };
+            
+            Object.entries(backendErrors).forEach(([backendKey, errorMessage]) => {
+                const frontendKey = fieldMapping[backendKey] || backendKey;
+                mappedErrors[frontendKey] = Array.isArray(errorMessage) ? errorMessage[0] : errorMessage;
+            });
+            
+            setErrors(mappedErrors);
+            scrollToFirstError(mappedErrors);
+        }
+            else {
                 showToast({
                     title: "Erreur",
                     description: error.message || "Une erreur s'est produite",
@@ -477,6 +504,7 @@ const EditBusiness = () => {
                         existingVideos={formData.existingVideos}
                         onDeleteExistingPhoto={(photoUrl) => deletePhotoMutation.mutate(photoUrl)}
                         onDeleteExistingVideo={(videoUrl) => deleteVideoMutation.mutate(videoUrl)}
+                        setHasUnsavedChanges={setHasUnsavedChanges}
                     />
 
                     {/* Action Buttons */}
