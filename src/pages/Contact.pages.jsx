@@ -32,7 +32,7 @@ export function ContactPage() {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const theme = useTheme();
-  const { showToast } = useToast();
+  const { showToast , ToastComponent } = useToast();
   const contactSchema = contactValidator();
 
     const handleSubmit = useCallback(async (e) => {
@@ -292,6 +292,8 @@ export function ContactPage() {
           </Paper>
         </Grid>
       </Grid>
+                  {ToastComponent}
+
     </Container>
   );
 }
