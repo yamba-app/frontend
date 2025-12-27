@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useAxiosPrivate from '../../core/instance/axiosprivate.instance';
 
 // ============================================
-// QUERY HOOKS
+// QUERY HOOKS (For Regular Users)
 // ============================================
 
 /**
@@ -21,7 +21,7 @@ export const useNotifications = (filters = {}, options = {}) => {
                     params.append(key, filters[key]);
                 }
             });
-            const { data } = await axiosPrivate.get(`api/notifications?${params.toString()}`);
+            const { data } = await axiosPrivate.get(`/api/notifications?${params.toString()}`);
             return data.data;
         },
         staleTime: 1 * 60 * 1000, // 1 minute
@@ -39,7 +39,7 @@ export const useUnreadNotifications = (options = {}) => {
     return useQuery({
         queryKey: ['notifications', 'unread'],
         queryFn: async () => {
-            const { data } = await axiosPrivate.get('api/notifications/unread');
+            const { data } = await axiosPrivate.get('/api/notifications/unread');
             return data.data;
         },
         staleTime: 30 * 1000, // 30 seconds
@@ -58,7 +58,7 @@ export const useUnreadNotificationCount = (options = {}) => {
     return useQuery({
         queryKey: ['notifications', 'unread', 'count'],
         queryFn: async () => {
-            const { data } = await axiosPrivate.get('api/notifications/unread');
+            const { data } = await axiosPrivate.get('/api/notifications/unread');
             return data.count || 0;
         },
         staleTime: 30 * 1000, // 30 seconds
@@ -77,7 +77,7 @@ export const useNotification = (notificationId, options = {}) => {
     return useQuery({
         queryKey: ['notification', notificationId],
         queryFn: async () => {
-            const { data } = await axiosPrivate.get(`api/notifications/${notificationId}`);
+            const { data } = await axiosPrivate.get(`/api/notifications/${notificationId}`);
             return data.data;
         },
         enabled: !!notificationId && (options.enabled !== false),
@@ -86,8 +86,12 @@ export const useNotification = (notificationId, options = {}) => {
     });
 };
 
+// ============================================
+// ADMIN QUERY HOOKS
+// ============================================
+
 /**
- * Get notification statistics (Admin)
+ * Get notification statistics (Admin ONLY)
  */
 export const useNotificationStatistics = (options = {}) => {
     const axiosPrivate = useAxiosPrivate();
@@ -95,7 +99,8 @@ export const useNotificationStatistics = (options = {}) => {
     return useQuery({
         queryKey: ['notifications', 'statistics'],
         queryFn: async () => {
-            const { data } = await axiosPrivate.get('api/notifications/statistics');
+            // FIXED: Added /admin/ prefix
+            const { data } = await axiosPrivate.get('/api/admin/notifications/statistics');
             return data.data;
         },
         staleTime: 2 * 60 * 1000,
@@ -118,7 +123,7 @@ export const useAdminNotifications = (filters = {}, options = {}) => {
                     params.append(key, filters[key]);
                 }
             });
-            const { data } = await axiosPrivate.get(`api/admin/notifications/all?${params.toString()}`);
+            const { data } = await axiosPrivate.get(`/api/admin/notifications/all?${params.toString()}`);
             return data.data;
         },
         staleTime: 1 * 60 * 1000,
@@ -139,7 +144,7 @@ export const useMarkNotificationAsRead = (options = {}) => {
 
     return useMutation({
         mutationFn: async (notificationId) => {
-            const { data } = await axiosPrivate.patch(`api/notifications/${notificationId}/read`);
+            const { data } = await axiosPrivate.patch(`/api/notifications/${notificationId}/read`);
             return data;
         },
         onMutate: async (notificationId) => {
@@ -186,7 +191,7 @@ export const useMarkNotificationAsRead = (options = {}) => {
         onSuccess: () => {
             // Invalidate to ensure consistency
             queryClient.invalidateQueries({ queryKey: ['notifications'] });
-            queryClient.invalidateQueries({ queryKey: ['notifications', 'statistics'] });
+            queryClient.invalidateQueries({ queryKey: ['adminNotifications'] });
         },
         ...options,
     });
@@ -201,7 +206,7 @@ export const useMarkAllNotificationsAsRead = (options = {}) => {
 
     return useMutation({
         mutationFn: async () => {
-            const { data } = await axiosPrivate.post('api/notifications/mark-all-read');
+            const { data } = await axiosPrivate.post('/api/notifications/mark-all-read');
             return data;
         },
         onMutate: async () => {
@@ -228,7 +233,7 @@ export const useMarkAllNotificationsAsRead = (options = {}) => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['notifications'] });
-            queryClient.invalidateQueries({ queryKey: ['notifications', 'statistics'] });
+            queryClient.invalidateQueries({ queryKey: ['adminNotifications'] });
         },
         ...options,
     });
@@ -243,12 +248,12 @@ export const useDeleteNotification = (options = {}) => {
 
     return useMutation({
         mutationFn: async (notificationId) => {
-            const { data } = await axiosPrivate.delete(`api/notifications/${notificationId}`);
+            const { data } = await axiosPrivate.delete(`/api/notifications/${notificationId}`);
             return data;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['notifications'] });
-            queryClient.invalidateQueries({ queryKey: ['notifications', 'statistics'] });
+            queryClient.invalidateQueries({ queryKey: ['adminNotifications'] });
         },
         ...options,
     });
@@ -263,12 +268,12 @@ export const useClearAllNotifications = (options = {}) => {
 
     return useMutation({
         mutationFn: async () => {
-            const { data } = await axiosPrivate.delete('api/notifications');
+            const { data } = await axiosPrivate.delete('/api/notifications');
             return data;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['notifications'] });
-            queryClient.invalidateQueries({ queryKey: ['notifications', 'statistics'] });
+            queryClient.invalidateQueries({ queryKey: ['adminNotifications'] });
         },
         ...options,
     });

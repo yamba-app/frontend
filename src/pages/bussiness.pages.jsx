@@ -168,21 +168,11 @@ const BusinessFormPage = () => {
                 });
             }
 
-            // Debug: Log FormData contents
-            console.log('=== FormData Contents ===');
-            for (let pair of formDataToSend.entries()) {
-                if (pair[1] instanceof File) {
-                    console.log(pair[0], ':', pair[1].name, '-', pair[1].size, 'bytes');
-                } else {
-                    console.log(pair[0], ':', pair[1]);
-                }
-            }
-
             // Fetch CSRF token
             await fetchCsrfToken();
 
             // Submit form
-            const response = await axiosPrivate.post('/api/busines/submit', formDataToSend, {
+            const response = await axiosPrivate.post('/api/business/submit', formDataToSend, {
                 headers: { 
                     'Content-Type': 'multipart/form-data'
                 }
