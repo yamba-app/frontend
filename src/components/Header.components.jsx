@@ -124,7 +124,7 @@ export function Header({ children }) {
 
   // ✅ Fetch unread counts and notifications (only for verified admin)
   const { data: notificationCount = 0 } = useUnreadNotificationCount({
-    enabled: isAdmin && !isLoading,
+    enabled: isAdmin && !isLoading, // FIX: Added enabled flag
   });
 
   const { data: messageCount = 0 } = useTotalUnreadMessageCount({
@@ -132,7 +132,7 @@ export function Header({ children }) {
   });
 
   const { data: unreadNotifications = [], isLoading: notificationsLoading } = useUnreadNotifications({
-    enabled: isAdmin && !isLoading,
+    enabled: isAdmin && !isLoading, // FIX: Added enabled flag
   });
 
   // Function to determine if a nav item is active
@@ -732,7 +732,8 @@ export function Header({ children }) {
               gap={1.5}
               sx={{ flex: { xs: 'none', md: 1 }, justifyContent: 'flex-end' }}
             >
-              {isAdmin && !isMobile && (
+              {/* FIX: Show icons for admin even on mobile */}
+              {isAdmin && (
                 <>
                   {/* Messages Button */}
                   <IconButton

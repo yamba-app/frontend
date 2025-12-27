@@ -16,7 +16,7 @@ export const useAdminBusiness = (businessId, options = {}) => {
     return useQuery({
         queryKey: ['adminBusiness', businessId],
         queryFn: async () => {
-            const { data } = await axiosPrivate.get(`api/admin/businesses/${businessId}`);
+            const { data } = await axiosPrivate.get(`/api/admin/businesses/${businessId}`);
             return data.data;
         },
         enabled: !!businessId && (options.enabled !== false),
@@ -36,7 +36,8 @@ export const useBusinessBySlug = (slug, options = {}) => {
     return useQuery({
         queryKey: ['business', 'slug', slug],
         queryFn: async () => {
-            const { data } = await axiosPrivate.get(`api/busines/slug/${slug}`);
+            // FIXED: Changed 'busines' to 'business'
+            const { data } = await axiosPrivate.get(`/api/business/slug/${slug}`);
             return data.data;
         },
         enabled: !!slug && (options.enabled !== false),
@@ -61,7 +62,8 @@ export const useBusinesses = (filters = {}, options = {}) => {
                     params.append(key, filters[key]);
                 }
             });
-            const { data } = await axiosPrivate.get(`api/busines/businesses?${params.toString()}`);
+            // FIXED: Changed 'busines' to 'business'
+            const { data } = await axiosPrivate.get(`/api/business/businesses?${params.toString()}`);
             return data.data;
         },
         staleTime: 2 * 60 * 1000, // 2 minutes
@@ -78,7 +80,8 @@ export const useCategories = (options = {}) => {
     return useQuery({
         queryKey: ['categories'],
         queryFn: async () => {
-            const { data } = await axiosPrivate.get('api/busines/categories');
+            // FIXED: Changed 'busines' to 'business'
+            const { data } = await axiosPrivate.get('/api/business/categories');
             return data.data;
         },
         staleTime: 30 * 60 * 1000, // 30 minutes
@@ -96,7 +99,8 @@ export const useLocations = (options = {}) => {
     return useQuery({
         queryKey: ['locations'],
         queryFn: async () => {
-            const { data } = await axiosPrivate.get('api/busines/locations');
+            // FIXED: Changed 'busines' to 'business'
+            const { data } = await axiosPrivate.get('/api/business/locations');
             return data.data;
         },
         staleTime: 30 * 60 * 1000, // 30 minutes
@@ -120,7 +124,7 @@ export const useUpdateBusiness = (businessId, options = {}) => {
         mutationFn: async (formData) => {
             await fetchCsrfToken();
             const { data } = await axiosPrivate.post(
-                `api/admin/businesses/${businessId}`,
+                `/api/admin/businesses/${businessId}`,
                 formData,
                 { 
                     headers: { 'Content-Type': 'multipart/form-data' },
@@ -136,12 +140,6 @@ export const useUpdateBusiness = (businessId, options = {}) => {
 
             // Snapshot previous value
             const previousBusiness = queryClient.getQueryData(['adminBusiness', businessId]);
-
-            // Optimistically update (optional - depends on your UX preference)
-            // queryClient.setQueryData(['adminBusiness', businessId], (old) => ({
-            //     ...old,
-            //     ...extractFormDataPreview(newData)
-            // }));
 
             return { previousBusiness };
         },
@@ -175,8 +173,9 @@ export const useCreateBusiness = (options = {}) => {
     return useMutation({
         mutationFn: async (formData) => {
             await fetchCsrfToken();
+            // FIXED: Changed 'busines' to 'business'
             const { data } = await axiosPrivate.post(
-                'api/busines/submit',
+                '/api/business/submit',
                 formData,
                 { 
                     headers: { 'Content-Type': 'multipart/form-data' },
@@ -207,7 +206,7 @@ export const useDeletePhoto = (businessId, options = {}) => {
             const path = photoPath.replace(/^.*\/storage\//, '');
             
             await axiosPrivate.delete(
-                `api/admin/businesses/${businessId}/photos`,
+                `/api/admin/businesses/${businessId}/photos`,
                 { data: { path } }
             );
             
@@ -260,7 +259,7 @@ export const useDeleteVideo = (businessId, options = {}) => {
             const path = videoPath.replace(/^.*\/storage\//, '');
             
             await axiosPrivate.delete(
-                `api/admin/businesses/${businessId}/videos`,
+                `/api/admin/businesses/${businessId}/videos`,
                 { data: { path } }
             );
             
@@ -311,7 +310,7 @@ export const useApproveBusiness = (options = {}) => {
         mutationFn: async ({ businessId, notes }) => {
             await fetchCsrfToken();
             const { data } = await axiosPrivate.post(
-                `api/admin/businesses/${businessId}/approve`,
+                `/api/admin/businesses/${businessId}/approve`,
                 { admin_notes: notes }
             );
             return data;
@@ -338,7 +337,7 @@ export const useRejectBusiness = (options = {}) => {
         mutationFn: async ({ businessId, reason, notes }) => {
             await fetchCsrfToken();
             const { data } = await axiosPrivate.post(
-                `api/admin/businesses/${businessId}/reject`,
+                `/api/admin/businesses/${businessId}/reject`,
                 { reason, admin_notes: notes }
             );
             return data;
@@ -364,7 +363,7 @@ export const useDeleteBusiness = (options = {}) => {
     return useMutation({
         mutationFn: async (businessId) => {
             await fetchCsrfToken();
-            const { data } = await axiosPrivate.delete(`api/admin/businesses/${businessId}`);
+            const { data } = await axiosPrivate.delete(`/api/admin/businesses/${businessId}`);
             return data;
         },
         onSuccess: () => {
@@ -388,7 +387,7 @@ export const useMarkBusinessAsBought = (options = {}) => {
         mutationFn: async ({ businessId, buyerEmail, buyerNotes }) => {
             await fetchCsrfToken();
             const { data } = await axiosPrivate.post(
-                `api/admin/businesses/${businessId}/mark-as-bought`,
+                `/api/admin/businesses/${businessId}/mark-as-bought`,
                 { buyer_email: buyerEmail, buyer_notes: buyerNotes }
             );
             return data;
@@ -414,7 +413,7 @@ export const useRevertBusinessToPending = (options = {}) => {
         mutationFn: async ({ businessId, adminNotes }) => {
             await fetchCsrfToken();
             const { data } = await axiosPrivate.post(
-                `api/admin/businesses/${businessId}/revert-to-pending`,
+                `/api/admin/businesses/${businessId}/revert-to-pending`,
                 { admin_notes: adminNotes }
             );
             return data;
@@ -441,7 +440,7 @@ export const useBulkApproveBusiness = (options = {}) => {
         mutationFn: async ({ businessIds, adminNotes }) => {
             await fetchCsrfToken();
             const { data } = await axiosPrivate.post(
-                'api/admin/businesses/bulk/approve',
+                '/api/admin/businesses/bulk/approve',
                 { business_ids: businessIds, admin_notes: adminNotes }
             );
             return data;
@@ -467,7 +466,7 @@ export const useBulkRejectBusiness = (options = {}) => {
         mutationFn: async ({ businessIds, reason, adminNotes }) => {
             await fetchCsrfToken();
             const { data } = await axiosPrivate.post(
-                'api/admin/businesses/bulk/reject',
+                '/api/admin/businesses/bulk/reject',
                 { business_ids: businessIds, reason, admin_notes: adminNotes }
             );
             return data;
@@ -493,7 +492,7 @@ export const useBulkDeleteBusiness = (options = {}) => {
         mutationFn: async (businessIds) => {
             await fetchCsrfToken();
             const { data } = await axiosPrivate.post(
-                'api/admin/businesses/bulk/delete',
+                '/api/admin/businesses/bulk/delete',
                 { business_ids: businessIds }
             );
             return data;
@@ -507,12 +506,3 @@ export const useBulkDeleteBusiness = (options = {}) => {
         ...options,
     });
 };
-
-// ============================================
-// UTILITY FUNCTIONS
-// ============================================
-
-/**
- * Helper to extract preview data from FormData (for optimistic updates)
- * Note: This is limited as FormData cannot be easily read
- */

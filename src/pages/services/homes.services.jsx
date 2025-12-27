@@ -29,7 +29,7 @@ const fetchBusinesses = async ({
     if (minPrice !== null) params.append('min_price', minPrice.toString());
     if (maxPrice !== null) params.append('max_price', maxPrice.toString());
     await fetchCsrfToken()
-    const { data } = await axiosPrivate.get(`/api/busines/businesses?${params.toString()}`);
+    const { data } = await axiosPrivate.get(`/api/business/businesses?${params.toString()}`);
     return data;
 };
 
@@ -47,7 +47,7 @@ const fetchBusinessById = async (id) => {
  */
 const fetchBusinessBySlug = async (slug) => {
     await fetchCsrfToken()
-    const { data } = await axiosPrivate.get(`/api/busines/slug/${slug}`);
+    const { data } = await axiosPrivate.get(`/api/business/slug/${slug}`);
     return data.data;
 };
 
@@ -56,7 +56,7 @@ const fetchBusinessBySlug = async (slug) => {
  */
 const fetchBusinessByNumber = async (businessNumber) => {
     await fetchCsrfToken()
-    const { data } = await axiosPrivate.get(`/api/busines/number/${businessNumber}`);
+    const { data } = await axiosPrivate.get(`/api/business/number/${businessNumber}`);
     return data.data;
 };
 
@@ -65,7 +65,7 @@ const fetchBusinessByNumber = async (businessNumber) => {
  */
 const fetchCategories = async () => {
     await fetchCsrfToken()
-    const { data } = await axiosPrivate.get('/api/busines/categories');
+    const { data } = await axiosPrivate.get('/api/business/categories');
     return data.data;
 };
 
@@ -75,7 +75,7 @@ const fetchCategories = async () => {
 const fetchLocations = async () => {
     await fetchCsrfToken()
 
-    const { data } = await axiosPrivate.get('/api/busines/locations');
+    const { data } = await axiosPrivate.get('/api/business/locations');
     return data.data;
 };
 
@@ -84,7 +84,7 @@ const fetchLocations = async () => {
  */
 const checkSubmissionStatus = async (email) => {
     await fetchCsrfToken()
-    const { data } = await axiosPrivate.post('/api/busines/check-status', { email });
+    const { data } = await axiosPrivate.post('/api/business/check-status', { email });
     return data.data;
 };
 

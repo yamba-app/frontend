@@ -18,6 +18,7 @@ import {
     Chip,
     Stack,
     CircularProgress,
+    Badge,
 } from '@mui/material';
 import { 
     FaEnvelope, 
@@ -61,6 +62,11 @@ const MessagesPage = () => {
     const { data: businessesData, isLoading: businessesLoading } = useAllBusinessesForMessages();
     const businesses = businessesData?.data || [];
 
+    // Calculate total unread messages across all businesses
+    const totalUnreadMessages = businesses.reduce((sum, business) => {
+        return sum + (business.unread_messages_count || 0);
+    }, 0);
+
     // Build filters for API
     const apiFilters = {
         status: filters.status || undefined,
@@ -74,7 +80,7 @@ const MessagesPage = () => {
         { enabled: !!selectedBusinessId }
     );
     
-    console.log("Messages Data:", messagesData?.data);
+    
     // Mutations
     const markAsReadMutation = useMarkMessageAsRead({
         onSuccess: () => {
@@ -196,10 +202,29 @@ const MessagesPage = () => {
         <Box sx={{ p: { xs: 2, md: 4 } }}>
             {/* Header */}
             <Box sx={{ mb: 4 }}>
-                <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    <FaInbox style={{ marginRight: 12, verticalAlign: 'middle' }} />
-                    Messagerie
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
+                        <FaInbox style={{ marginRight: 12, verticalAlign: 'middle' }} />
+                        Messagerie
+                    </Typography>
+                    {totalUnreadMessages > 0 && (
+                        <Badge 
+                            badgeContent={totalUnreadMessages} 
+                            color="error"
+                            max={99}
+                            sx={{
+                                '& .MuiBadge-badge': {
+                                    fontSize: '0.9rem',
+                                    height: '28px',
+                                    minWidth: '28px',
+                                    borderRadius: '14px',
+                                }
+                            }}
+                        >
+                            <Box sx={{ width: 40, height: 40 }} />
+                        </Badge>
+                    )}
+                </Box>
                 <Typography variant="body1" color="text.secondary">
                     Gérez tous les messages et demandes de renseignements par entreprise
                 </Typography>
@@ -232,7 +257,7 @@ const MessagesPage = () => {
                                 {businesses.map((business) => (
                                     <MenuItem key={business.id} value={business.id}>
                                         <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                                            <Box>
+                                            <Box sx={{ flex: 1 }}>
                                                 <Typography variant="body1" sx={{ fontWeight: 600 }}>
                                                     {business.name}
                                                 </Typography>
@@ -241,10 +266,10 @@ const MessagesPage = () => {
                                                 </Typography>
                                             </Box>
                                             {business.unread_messages_count > 0 && (
-                                                <Chip 
-                                                    label={business.unread_messages_count} 
-                                                    size="small" 
+                                                <Badge 
+                                                    badgeContent={business.unread_messages_count} 
                                                     color="error"
+                                                    max={99}
                                                     sx={{ ml: 2 }}
                                                 />
                                             )}
@@ -272,6 +297,16 @@ const MessagesPage = () => {
                                         Email: {selectedBusiness.contact_email || '—'}
                                     </Typography>
                                 </Grid>
+                                {selectedBusiness.unread_messages_count > 0 && (
+                                    <Grid item xs={12}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <FaEnvelope color="#f44336" />
+                                            <Typography variant="body2" color="error.main" sx={{ fontWeight: 600 }}>
+                                                {selectedBusiness.unread_messages_count} message{selectedBusiness.unread_messages_count > 1 ? 's' : ''} non lu{selectedBusiness.unread_messages_count > 1 ? 's' : ''}
+                                            </Typography>
+                                        </Box>
+                                    </Grid>
+                                )}
                             </Grid>
                         </Box>
                     )}
@@ -396,6 +431,16 @@ const MessagesPage = () => {
                         <Typography variant="body1" color="text.secondary">
                             Veuillez sélectionner une entreprise dans la liste ci-dessus pour voir ses messages
                         </Typography>
+                        {totalUnreadMessages > 0 && (
+                            <Box sx={{ mt: 3 }}>
+                                <Chip 
+                                    icon={<FaEnvelope />}
+                                    label={`${totalUnreadMessages} message${totalUnreadMessages > 1 ? 's' : ''} non lu${totalUnreadMessages > 1 ? 's' : ''} au total`}
+                                    color="error"
+                                    size="medium"
+                                />
+                            </Box>
+                        )}
                     </CardContent>
                 </Card>
             )}
