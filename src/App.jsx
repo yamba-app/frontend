@@ -10,6 +10,9 @@ import Dashboard from './features/dashboard';
 import EditBusiness from './features/EditBusiness';
 import AdminBusinessViewPage from './features/ViewBusiness';
 import MessagesPage from './features/Messages';
+import PrivacyPolicyPage from './pages/Privacy.pages';
+import DisclaimerPage from './pages/Disclaimed.pages';
+import TermsAndConditionsPage from './pages/TermeConditions.pages';
 
 // Lazy load components for better performance
 const PageLayout = lazy(() => import('./pages/Layout.pages'));
@@ -35,6 +38,10 @@ function App() {
           <Route path={pagesRoutes.contact} element={<ContactPage />} />
           <Route path={pagesRoutes.businessDetails} element={<BusinessDetailPage />} />
           <Route path={pagesRoutes.addBusiness} element={<BusinessFormPage />} />
+          <Route path={pagesRoutes.privacy} element={<PrivacyPolicyPage />} />
+          <Route path={pagesRoutes.disclaimer} element={<DisclaimerPage />} />
+          <Route path={pagesRoutes.termeCondition} element={<TermsAndConditionsPage />} />
+
           <Route path={adminRoutes.profiles} element={withPrivateRoute(Profiles)} />
           <Route path={adminRoutes.businesses} element={withPrivateRoute(BusinessPublish)} />
           <Route path={adminRoutes.dashboard} element={withPrivateRoute(Dashboard)} />

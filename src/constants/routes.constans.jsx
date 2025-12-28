@@ -5,6 +5,9 @@ export const pagesRoutes={
     businessDetails:"/business/:id",
     addBusiness:"/add-business",
     forbidden:"/forbidden",
+    privacy:"/privacy",
+    disclaimer:'/disclaimer',
+    termeCondition:"/terme-condition"
 }
 export const authRoutes={
     signIn:"/login"
