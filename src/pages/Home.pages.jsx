@@ -11,14 +11,36 @@ import Stack from "@mui/material/Stack";
 import CircularProgress from "@mui/material/CircularProgress";
 import Chip from "@mui/material/Chip";
 import Fade from "@mui/material/Fade";
-import { FaPlus, FaSearch, FaFilter, FaTimes, FaRedo } from 'react-icons/fa';
+import Slider from "@mui/material/Slider";
+import { FaPlus, FaSearch, FaFilter, FaTimes, FaRedo, FaMoneyBillWave } from 'react-icons/fa';
 import { FaLayerGroup } from 'react-icons/fa6';
 import { BusinessCard } from '../components/BusinessCard.components';
 import { BusinessForm } from '../components/BusinessForm.components';
 import { InputField, SelectField } from '../components/Form.components';
-import { useBusinesses, useCategories, useLocations } from './services/homes.services';
+import { useBusinesses } from './services/homes.services';
+import burkinaCities from '../constants/City.constant';
 
 const ITEMS_PER_PAGE = 9;
+
+// Predefined price ranges (in FCFA)
+const PRICE_RANGES = [
+    { label: 'Tous les prix', min: 0, max: 1000000000 },
+    { label: '0 - 1M FCFA', min: 0, max: 1000000 },
+    { label: '1M - 5M FCFA', min: 1000000, max: 5000000 },
+    { label: '5M - 10M FCFA', min: 5000000, max: 10000000 },
+    { label: '10M - 25M FCFA', min: 10000000, max: 25000000 },
+    { label: '25M - 50M FCFA', min: 25000000, max: 50000000 },
+    { label: '50M - 100M FCFA', min: 50000000, max: 100000000 },
+    { label: '100M+ FCFA', min: 100000000, max: 1000000000 },
+];
+
+// Helper function to format price
+const formatPrice = (value) => {
+    if (value >= 1000000) {
+        return `${(value / 1000000).toFixed(0)}M FCFA`;
+    }
+    return `${(value / 1000).toFixed(0)}K FCFA`;
+};
 
 export function HomePage() {
     const navigate = useNavigate();
@@ -27,7 +49,27 @@ export function HomePage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [locationFilter, setLocationFilter] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
+    const [priceRangeFilter, setPriceRangeFilter] = useState('');
+    const [customPriceRange, setCustomPriceRange] = useState([0, 100000000]);
+    const [showCustomPriceSlider, setShowCustomPriceSlider] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+
+    // Get actual min/max prices from selected range
+    const getActivePriceRange = () => {
+        if (priceRangeFilter === 'custom') {
+            return { min: customPriceRange[0], max: customPriceRange[1] };
+        }
+        if (priceRangeFilter && priceRangeFilter !== '') {
+            const selected = PRICE_RANGES.find(range => range.label === priceRangeFilter);
+            if (selected && selected.label !== 'Tous les prix') {
+                return { min: selected.min, max: selected.max };
+            }
+        }
+        return null;
+    };
+
+    const activePriceRange = getActivePriceRange();
+
 
     // Fetch data with React Query
     const { data: businessData, isLoading, isError } = useBusinesses({
@@ -36,15 +78,16 @@ export function HomePage() {
         category: categoryFilter,
         location: locationFilter,
         search: searchTerm,
+        min_price: activePriceRange?.min,
+        max_price: activePriceRange?.max,
     });
 
-    const { data: categoriesData } = useCategories();
-    const { data: locationsData } = useLocations();
+
 
     // Reset to first page when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, locationFilter, categoryFilter]);
+    }, [searchTerm, locationFilter, categoryFilter, priceRangeFilter, customPriceRange]);
 
     const handlePageChange = (event, page) => {
         setCurrentPage(page);
@@ -58,14 +101,28 @@ export function HomePage() {
         navigate(`/business/${businessId}`);
     };
 
+    const handlePriceRangeChange = (e) => {
+        const value = e.target.value;
+        setPriceRangeFilter(value);
+
+        if (value === 'custom') {
+            setShowCustomPriceSlider(true);
+        } else {
+            setShowCustomPriceSlider(false);
+        }
+    };
+
     // Check if any filters are active
-    const hasActiveFilters = searchTerm || locationFilter || categoryFilter;
+    const hasActiveFilters = searchTerm || locationFilter || categoryFilter || priceRangeFilter;
 
     // Reset all filters
     const handleResetFilters = () => {
         setSearchTerm('');
         setLocationFilter('');
         setCategoryFilter('');
+        setPriceRangeFilter('');
+        setCustomPriceRange([0, 100000000]);
+        setShowCustomPriceSlider(false);
         setCurrentPage(1);
     };
 
@@ -75,19 +132,35 @@ export function HomePage() {
     const totalPages = meta.total_pages || 0;
     const totalBusinesses = meta.total || 0;
 
-    // Process categories for SelectField
-    const categoryOptions = categoriesData?.map(cat => ({
-        key: cat.category.toLowerCase().replace(/\s+/g, '_'),
-        value: cat.category,
-        description: `${cat.count} entreprise${cat.count > 1 ? 's' : ''}`
-    })) || [];
 
-    // Process locations for SelectField
-    const locationOptions = locationsData?.map(loc => ({
-        key: loc.location.toLowerCase().replace(/\s+/g, '_'),
-        value: loc.location,
-        description: `${loc.count} entreprise${loc.count > 1 ? 's' : ''}`
-    })) || [];
+
+    // Constants
+    const categoryOptions = [
+        { key: 'RESTAURANT', value: 'Restaurant' },
+        { key: 'COMMERCE', value: 'Commerce' },
+        { key: 'KIOSQUE', value: 'Kiosque' },
+        { key: 'SERVICE', value: 'Service' },
+        { key: 'PRODUCTION', value: 'Production' },
+        { key: 'TRANSPORT', value: 'Transport' },
+        { key: 'TECHNOLOGIE', value: 'Technologie' },
+        { key: 'SANTE', value: 'Santé' },
+        { key: 'EDUCATION', value: 'Éducation' },
+        { key: 'AUTRE', value: 'Autre' }
+    ];
+   
+    // Process price ranges for SelectField
+    const priceRangeOptions = [
+        ...PRICE_RANGES.map(range => ({
+            key: range.label.toLowerCase().replace(/\s+/g, '_'),
+            value: range.label,
+            description: range.label === 'Tous les prix' ? 'Aucune limite' : range.label
+        })),
+        {
+            key: 'custom',
+            value: 'custom',
+            description: 'Personnalisé'
+        }
+    ];
 
     // Loading state
     if (isLoading) {
@@ -119,8 +192,8 @@ export function HomePage() {
                         <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
                             Une erreur s'est produite lors du chargement des entreprises.
                         </Typography>
-                        <Button 
-                            variant="contained" 
+                        <Button
+                            variant="contained"
                             onClick={() => window.location.reload()}
                             startIcon={<FaRedo />}
                             sx={{
@@ -214,8 +287,9 @@ export function HomePage() {
                         borderColor: 'divider'
                     }}
                 >
-                    <Grid container spacing={3} sx={{  }}>
-                        <Grid size={{ md: 5, sm: 12, xs: 12 }}>
+                    <Grid container spacing={3}>
+                        {/* Search */}
+                        <Grid size={{ md: 12, sm: 12, xs: 12 }}>
                             <InputField
                                 fullWidth
                                 placeholder="Rechercher une entreprise..."
@@ -225,31 +299,130 @@ export function HomePage() {
                                 prefix={<FaSearch />}
                             />
                         </Grid>
-                        <Grid size={{ md: 3, sm: 6, xs: 12 }}>
+
+                        {/* Location Filter */}
+                        <Grid size={{ md: 4, sm: 6, xs: 12 }}>
                             <SelectField
                                 value={locationFilter}
                                 onChange={(e) => setLocationFilter(e.target.value)}
-                                label="Filtrer par ville"
-                                options={locationOptions}
+                                label="Ville"
+                                options={burkinaCities}
                                 searchPlaceholder='Rechercher'
                                 prefixIcon={<FaFilter />}
                             />
                         </Grid>
 
-                        <Grid size={{ md: 3, sm: 6, xs: 12 }}>
+                        {/* Category Filter */}
+                        <Grid size={{ md: 4, sm: 6, xs: 12 }}>
                             <SelectField
                                 value={categoryFilter}
                                 onChange={(e) => setCategoryFilter(e.target.value)}
-                                label="Filtrer par Category"
+                                label="Catégorie"
                                 options={categoryOptions}
                                 searchPlaceholder='Rechercher'
                                 prefixIcon={<FaLayerGroup />}
                             />
                         </Grid>
 
-                        {/* Reset Button - Only shows when filters are active */}
+                        {/* Price Range Filter */}
+                        <Grid size={{ md: 4, sm: 12, xs: 12 }}>
+                            <SelectField
+                                value={priceRangeFilter}
+                                onChange={handlePriceRangeChange}
+                                label="Fourchette de prix"
+                                options={priceRangeOptions}
+                                searchPlaceholder='Rechercher'
+                                prefixIcon={<FaMoneyBillWave />}
+                            />
+                        </Grid>
+
+                        {/* Custom Price Slider */}
+                        {showCustomPriceSlider && (
+                            <Grid size={{ xs: 12 }}>
+                                <Fade in={true} timeout={400}>
+                                    <Paper
+                                        elevation={0}
+                                        sx={{
+                                            p: 3,
+                                            bgcolor: 'success.light',
+                                            borderRadius: 2,
+                                            border: '2px solid',
+                                            borderColor: 'success.main'
+                                        }}
+                                    >
+                                        <Typography
+                                            variant="subtitle1"
+                                            sx={{
+                                                mb: 3,
+                                                fontWeight: 600,
+                                                color: 'success.dark',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 1
+                                            }}
+                                        >
+                                            <FaMoneyBillWave />
+                                            Prix personnalisé: {formatPrice(customPriceRange[0])} - {formatPrice(customPriceRange[1])}
+                                        </Typography>
+                                        <Slider
+                                            value={customPriceRange}
+                                            onChange={(e, newValue) => setCustomPriceRange(newValue)}
+                                            valueLabelDisplay="auto"
+                                            valueLabelFormat={formatPrice}
+                                            min={0}
+                                            max={100000000}
+                                            step={1000000}
+                                            marks={[
+                                                { value: 0, label: '0' },
+                                                { value: 25000000, label: '25M' },
+                                                { value: 50000000, label: '50M' },
+                                                { value: 75000000, label: '75M' },
+                                                { value: 100000000, label: '100M+' },
+                                            ]}
+                                            sx={{
+                                                color: 'success.main',
+                                                '& .MuiSlider-thumb': {
+                                                    width: 24,
+                                                    height: 24,
+                                                    backgroundColor: 'success.dark',
+                                                    border: '3px solid white',
+                                                    boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                                                    '&:hover, &.Mui-focusVisible': {
+                                                        boxShadow: '0 4px 12px rgba(46, 125, 50, 0.4)',
+                                                    },
+                                                },
+                                                '& .MuiSlider-track': {
+                                                    height: 6,
+                                                    background: 'linear-gradient(90deg, #2e7d32 0%, #66bb6a 100%)',
+                                                },
+                                                '& .MuiSlider-rail': {
+                                                    height: 6,
+                                                    opacity: 0.3,
+                                                },
+                                                '& .MuiSlider-mark': {
+                                                    backgroundColor: 'success.dark',
+                                                    height: 10,
+                                                    width: 2,
+                                                },
+                                                '& .MuiSlider-markLabel': {
+                                                    color: 'success.dark',
+                                                    fontWeight: 600,
+                                                    fontSize: '0.875rem',
+                                                },
+                                                '& .MuiSlider-valueLabel': {
+                                                    backgroundColor: 'success.dark',
+                                                    fontWeight: 600,
+                                                },
+                                            }}
+                                        />
+                                    </Paper>
+                                </Fade>
+                            </Grid>
+                        )}
+
+                        {/* Reset Button */}
                         {hasActiveFilters && (
-                            <Grid size={{ md: 1, sm: 12, xs: 12 }}>
+                            <Grid size={{ xs: 12 }}>
                                 <Button
                                     fullWidth
                                     variant="outlined"
@@ -257,20 +430,20 @@ export function HomePage() {
                                     onClick={handleResetFilters}
                                     startIcon={<FaTimes />}
                                     sx={{
-                                        height: '56px',
+                                        height: '48px',
                                         borderWidth: 2,
                                         fontWeight: 600,
-                                        px: 2,
+                                        fontSize: '1rem',
                                         transition: 'all 0.3s ease',
                                         '&:hover': {
                                             borderWidth: 2,
-                                            transform: 'scale(1.05)',
+                                            transform: 'scale(1.02)',
                                             boxShadow: 2
                                         }
                                     }}
-
-                                />
-                                   
+                                >
+                                    Réinitialiser tous les filtres
+                                </Button>
                             </Grid>
                         )}
                     </Grid>
@@ -278,10 +451,10 @@ export function HomePage() {
                     {/* Active Filters Display */}
                     {hasActiveFilters && (
                         <Fade in={true} timeout={400}>
-                            <Box 
-                                sx={{ 
-                                    mt: 3, 
-                                    pt: 3, 
+                            <Box
+                                sx={{
+                                    mt: 3,
+                                    pt: 3,
                                     borderTop: '1px solid',
                                     borderColor: 'divider',
                                     display: 'flex',
@@ -293,7 +466,7 @@ export function HomePage() {
                                 <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary' }}>
                                     Filtres actifs:
                                 </Typography>
-                                
+
                                 {searchTerm && (
                                     <Chip
                                         label={`Recherche: "${searchTerm}"`}
@@ -304,7 +477,7 @@ export function HomePage() {
                                         sx={{ fontWeight: 500 }}
                                     />
                                 )}
-                                
+
                                 {locationFilter && (
                                     <Chip
                                         label={`Ville: ${locationFilter}`}
@@ -315,12 +488,29 @@ export function HomePage() {
                                         sx={{ fontWeight: 500 }}
                                     />
                                 )}
-                                
+
                                 {categoryFilter && (
                                     <Chip
                                         label={`Catégorie: ${categoryFilter}`}
                                         onDelete={() => setCategoryFilter('')}
                                         color="primary"
+                                        variant="outlined"
+                                        deleteIcon={<FaTimes />}
+                                        sx={{ fontWeight: 500 }}
+                                    />
+                                )}
+
+                                {priceRangeFilter && priceRangeFilter !== 'Tous les prix' && (
+                                    <Chip
+                                        label={priceRangeFilter === 'custom'
+                                            ? `Prix: ${formatPrice(customPriceRange[0])} - ${formatPrice(customPriceRange[1])}`
+                                            : `Prix: ${priceRangeFilter}`
+                                        }
+                                        onDelete={() => {
+                                            setPriceRangeFilter('');
+                                            setShowCustomPriceSlider(false);
+                                        }}
+                                        color="success"
                                         variant="outlined"
                                         deleteIcon={<FaTimes />}
                                         sx={{ fontWeight: 500 }}
@@ -332,10 +522,10 @@ export function HomePage() {
 
                     {/* Results Summary */}
                     {totalBusinesses > 0 && (
-                        <Box 
-                            mt={3} 
-                            sx={{ 
-                                p: 2, 
+                        <Box
+                            mt={3}
+                            sx={{
+                                p: 2,
                                 bgcolor: 'success.light',
                                 borderRadius: 2,
                                 border: '1px solid',
@@ -355,10 +545,10 @@ export function HomePage() {
             <div id="business-listings">
                 {businesses.length === 0 ? (
                     <Fade in={true} timeout={1000}>
-                        <Paper 
-                            elevation={2} 
-                            sx={{ 
-                                textAlign: 'center', 
+                        <Paper
+                            elevation={2}
+                            sx={{
+                                textAlign: 'center',
                                 py: 10,
                                 borderRadius: 3,
                                 background: 'linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%)'
@@ -370,13 +560,13 @@ export function HomePage() {
                                 gutterBottom
                                 sx={{ mb: 2, fontWeight: 600 }}
                             >
-                                {searchTerm || locationFilter || categoryFilter ?
+                                {hasActiveFilters ?
                                     '🔍 Aucune entreprise trouvée avec ces critères.' :
                                     '📋 Aucune entreprise publiée pour le moment.'
                                 }
                             </Typography>
                             <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-                                {hasActiveFilters ? 
+                                {hasActiveFilters ?
                                     'Essayez de modifier vos critères de recherche.' :
                                     'Soyez le premier à publier une annonce !'
                                 }

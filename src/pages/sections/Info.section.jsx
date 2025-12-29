@@ -13,12 +13,14 @@ import {
 import { BiCalendar } from 'react-icons/bi';
 import { FaBuilding, FaCity, FaLayerGroup, FaMap } from 'react-icons/fa';
 import { InputField, SelectField, TextArea } from '../../components/Form.components';
+import burkinaCities from '../../constants/City.constant';
 // Section Components+
 
 // Constants
 const businessCategories = [
     { key: 'RESTAURANT', value: 'Restaurant' },
     { key: 'COMMERCE', value: 'Commerce' },
+    { key: 'KIOSQUE', value: 'Kiosque' },
     { key: 'SERVICE', value: 'Service' },
     { key: 'PRODUCTION', value: 'Production' },
     { key: 'TRANSPORT', value: 'Transport' },
@@ -74,16 +76,16 @@ const BasicInfoSection = ({ formData, errors, handleChange }) => (
                 </Grid>
 
                 <Grid size={{md:4,sm:12,xs:12}}>
-                    <InputField
-                        label="Localisation"
+                    <SelectField
+                        label="Ville de la Localisation"
                         name="location"
                         isRequired
-                        fullWidth
+                        options={burkinaCities}
                         value={formData.location}
                         prefix={<FaCity />}
                         onChange={handleChange}
                         error={!!errors.location}
-                        errorMessage={errors.location}
+                        helperText={errors.location}
                         placeholder="Ex: Ouagadougou, Secteur 15"
                     />
                 </Grid>

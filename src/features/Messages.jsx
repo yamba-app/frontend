@@ -19,6 +19,8 @@ import {
     Stack,
     CircularProgress,
     Badge,
+    Alert,
+    Divider,
 } from '@mui/material';
 import { 
     FaEnvelope, 
@@ -28,7 +30,9 @@ import {
     FaInbox, 
     FaEnvelopeOpen, 
     FaCheckCircle, 
-    FaBuilding 
+    FaBuilding,
+    FaShareSquare,
+    FaExclamationTriangle
 } from 'react-icons/fa';
 import useToast from '../components/Toast.components';
 import { DeleteConfirmationModal } from '../components/Modal.components';
@@ -37,7 +41,8 @@ import {
     useMarkMessageAsRead, 
     useMarkMessageAsReplied, 
     useDeleteMessage,
-    useAllBusinessesForMessages 
+    useAllBusinessesForMessages,
+    useForwardMessageToOwner  // NEW IMPORT
 } from './services/Messages.services';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -57,6 +62,7 @@ const MessagesPage = () => {
     // Modal states
     const [deleteModal, setDeleteModal] = useState({ open: false, message: null });
     const [viewModal, setViewModal] = useState({ open: false, message: null });
+    const [forwardModal, setForwardModal] = useState({ open: false, message: null }); // NEW
 
     // Fetch all businesses for dropdown
     const { data: businessesData, isLoading: businessesLoading } = useAllBusinessesForMessages();
@@ -113,6 +119,27 @@ const MessagesPage = () => {
         }
     });
 
+    // NEW: Forward mutation
+    const forwardMutation = useForwardMessageToOwner({
+        onSuccess: () => {
+            showToast({ 
+                title: 'Succès', 
+                description: 'Message transféré au propriétaire avec succès', 
+                status: 'success' 
+            });
+            setForwardModal({ open: false, message: null });
+            refetch();
+        },
+        onError: (error) => {
+            const errorMessage = error.response?.data?.message || 'Impossible de transférer le message';
+            showToast({ 
+                title: 'Erreur', 
+                description: errorMessage, 
+                status: 'error' 
+            });
+        }
+    });
+
     // Extract data
     const messages = messagesData?.data || [];
     const statistics = messagesData?.statistics || { total: 0, new: 0, read: 0, replied: 0 };
@@ -166,6 +193,17 @@ const MessagesPage = () => {
         }
     };
 
+    // NEW: Forward handlers
+    const handleForwardClick = (row) => {
+        setForwardModal({ open: true, message: row });
+    };
+
+    const handleForwardConfirm = () => {
+        if (forwardModal.message) {
+            forwardMutation.mutate(forwardModal.message.id);
+        }
+    };
+
     const formatDate = (date) => {
         if (!date) return 'N/A';
         try {
@@ -175,9 +213,10 @@ const MessagesPage = () => {
         }
     };
 
-    // Actions for datatable
+    // Actions for datatable - ADD FORWARD ACTION
     const actions = {
         onView: handleViewClick,
+        onForward: handleForwardClick,  // NEW
         onMarkAsReplied: handleMarkAsReplied,
         onDelete: handleDeleteClick,
     };
@@ -318,7 +357,7 @@ const MessagesPage = () => {
                 <>
                     {/* Statistics Cards */}
                     <Grid container spacing={3} sx={{ mb: 4 }}>
-                        <Grid size={{md:3,sm:6,xs:12}}>
+                        <Grid item xs={12} sm={6} md={3}>
                             <Card>
                                 <CardContent>
                                     <Box display="flex" alignItems="center" justifyContent="space-between">
@@ -336,7 +375,7 @@ const MessagesPage = () => {
                             </Card>
                         </Grid>
 
-                        <Grid size={{md:3,sm:6,xs:12}}>
+                        <Grid item xs={12} sm={6} md={3}>
                             <Card sx={{ bgcolor: '#ffebee' }}>
                                 <CardContent>
                                     <Box display="flex" alignItems="center" justifyContent="space-between">
@@ -354,7 +393,7 @@ const MessagesPage = () => {
                             </Card>
                         </Grid>
 
-                        <Grid size={{md:3,sm:6,xs:12}}>
+                        <Grid item xs={12} sm={6} md={3}>
                             <Card sx={{ bgcolor: '#fff3e0' }}>
                                 <CardContent>
                                     <Box display="flex" alignItems="center" justifyContent="space-between">
@@ -372,7 +411,7 @@ const MessagesPage = () => {
                             </Card>
                         </Grid>
 
-                        <Grid size={{md:3,sm:6,xs:12}}>
+                        <Grid item xs={12} sm={6} md={3}>
                             <Card sx={{ bgcolor: '#e8f5e9' }}>
                                 <CardContent>
                                     <Box display="flex" alignItems="center" justifyContent="space-between">
@@ -457,28 +496,38 @@ const MessagesPage = () => {
                         <DialogTitle>
                             <Box display="flex" justifyContent="space-between" alignItems="center">
                                 <Typography variant="h6">Détails du message</Typography>
-                                <Chip
-                                    label={
-                                        viewModal.message.status === 'new' 
-                                            ? 'Nouveau' 
-                                            : viewModal.message.status === 'read' 
-                                            ? 'Lu' 
-                                            : 'Répondu'
-                                    }
-                                    color={
-                                        viewModal.message.status === 'new' 
-                                            ? 'error' 
-                                            : viewModal.message.status === 'read' 
-                                            ? 'warning' 
-                                            : 'success'
-                                    }
-                                    size="small"
-                                />
+                                <Box sx={{ display: 'flex', gap: 1 }}>
+                                    <Chip
+                                        label={
+                                            viewModal.message.status === 'new' 
+                                                ? 'Nouveau' 
+                                                : viewModal.message.status === 'read' 
+                                                ? 'Lu' 
+                                                : 'Répondu'
+                                        }
+                                        color={
+                                            viewModal.message.status === 'new' 
+                                                ? 'error' 
+                                                : viewModal.message.status === 'read' 
+                                                ? 'warning' 
+                                                : 'success'
+                                        }
+                                        size="small"
+                                    />
+                                    {viewModal.message.forwarded_to_owner && (
+                                        <Chip
+                                            icon={<FaShareSquare />}
+                                            label="Transféré"
+                                            color="info"
+                                            size="small"
+                                        />
+                                    )}
+                                </Box>
                             </Box>
                         </DialogTitle>
                         <DialogContent dividers>
                             <Grid container spacing={3}>
-                                <Grid item xs={12}>
+                                <Grid size={{xs:12}}>
                                     <Paper elevation={0} sx={{ p: 2, bgcolor: 'grey.50' }}>
                                         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                                             <FaUser style={{ marginRight: 8 }} />
@@ -500,7 +549,7 @@ const MessagesPage = () => {
                                     </Paper>
                                 </Grid>
 
-                                <Grid item xs={12}>
+                                <Grid size={{xs:12}}>
                                     <Paper elevation={0} sx={{ p: 2, bgcolor: 'grey.50' }}>
                                         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                                             Entreprise concernée
@@ -514,7 +563,7 @@ const MessagesPage = () => {
                                     </Paper>
                                 </Grid>
 
-                                <Grid item xs={12}>
+                               <Grid size={{xs:12}}>
                                     <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                                         Message
                                     </Typography>
@@ -525,7 +574,7 @@ const MessagesPage = () => {
                                     </Paper>
                                 </Grid>
 
-                                <Grid item xs={12} sm={4}>
+                                <Grid size={{xs:12,md:4}}>
                                     <Typography variant="caption" color="text.secondary">
                                         Date d'envoi
                                     </Typography>
@@ -535,7 +584,7 @@ const MessagesPage = () => {
                                 </Grid>
 
                                 {viewModal.message.read_at && (
-                                    <Grid item xs={12} sm={4}>
+                                    <Grid size={{xs:12,md:4}}>
                                         <Typography variant="caption" color="text.secondary">
                                             Lu le
                                         </Typography>
@@ -546,7 +595,7 @@ const MessagesPage = () => {
                                 )}
 
                                 {viewModal.message.replied_at && (
-                                    <Grid item xs={12} sm={4}>
+                                    <Grid size={{xs:12,md:4}}>
                                         <Typography variant="caption" color="text.secondary">
                                             Répondu le
                                         </Typography>
@@ -555,12 +604,34 @@ const MessagesPage = () => {
                                         </Typography>
                                     </Grid>
                                 )}
+
+                                {viewModal.message.forwarded_at && (
+                                    <Grid size={{md:12}}>
+                                        <Alert severity="info" icon={<FaShareSquare />}>
+                                            Ce message a été transféré au propriétaire le{' '}
+                                            <strong>{formatDate(viewModal.message.forwarded_at)}</strong>
+                                        </Alert>
+                                    </Grid>
+                                )}
                             </Grid>
                         </DialogContent>
                         <DialogActions>
                             <Button onClick={() => setViewModal({ open: false, message: null })}>
                                 Fermer
                             </Button>
+                            {!viewModal.message.forwarded_to_owner && (
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    startIcon={<FaShareSquare />}
+                                    onClick={() => {
+                                        setViewModal({ open: false, message: null });
+                                        handleForwardClick(viewModal.message);
+                                    }}
+                                >
+                                    Transférer au propriétaire
+                                </Button>
+                            )}
                             {viewModal.message.status !== 'replied' && (
                                 <Button
                                     variant="contained"
@@ -585,6 +656,88 @@ const MessagesPage = () => {
                         </DialogActions>
                     </>
                 )}
+            </Dialog>
+
+            {/* NEW: Forward Confirmation Modal */}
+            <Dialog
+                open={forwardModal.open}
+                onClose={() => !forwardMutation.isPending && setForwardModal({ open: false, message: null })}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle sx={{ bgcolor: 'primary.main', color: 'white' }}>
+                    <Box display="flex" alignItems="center" gap={1}>
+                        <FaShareSquare />
+                        <Typography variant="h6">Transférer au propriétaire</Typography>
+                    </Box>
+                </DialogTitle>
+                <DialogContent sx={{ mt: 2 }}>
+                    {forwardModal.message && (
+                        <>
+                            <Alert severity="warning" icon={<FaExclamationTriangle />} sx={{ mb: 2 }}>
+                                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                    Attention: Cette action va envoyer un email au propriétaire
+                                </Typography>
+                            </Alert>
+
+                            <Typography variant="body1" gutterBottom sx={{ mb: 2 }}>
+                                Vous êtes sur le point de transférer cette demande au propriétaire de l'entreprise :
+                            </Typography>
+
+                            <Paper elevation={0} sx={{ p: 2, bgcolor: 'grey.50', mb: 2 }}>
+                                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                    Entreprise:
+                                </Typography>
+                                <Typography variant="body1" sx={{ fontWeight: 700, mb: 1 }}>
+                                    {forwardModal.message.business?.name}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    N° {forwardModal.message.business?.business_number}
+                                </Typography>
+                            </Paper>
+
+                            <Divider sx={{ my: 2 }} />
+
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                Détails de la demande:
+                            </Typography>
+                            <Paper elevation={0} sx={{ p: 2, bgcolor: 'grey.50', mb: 2 }}>
+                                <Typography variant="body2" sx={{ mb: 1 }}>
+                                    <strong>De:</strong> {forwardModal.message.sender_name}
+                                </Typography>
+                                <Typography variant="body2" sx={{ mb: 1 }}>
+                                    <strong>Email:</strong> {forwardModal.message.sender_email}
+                                </Typography>
+                                <Typography variant="body2">
+                                    <strong>Téléphone:</strong> {forwardModal.message.sender_phone}
+                                </Typography>
+                            </Paper>
+
+                            <Alert severity="info" sx={{ mt: 2 }}>
+                                <Typography variant="body2">
+                                    Le propriétaire recevra un email avec toutes les informations de contact de l'acheteur potentiel.
+                                </Typography>
+                            </Alert>
+                        </>
+                    )}
+                </DialogContent>
+                <DialogActions sx={{ p: 2, bgcolor: 'grey.50' }}>
+                    <Button 
+                        onClick={() => setForwardModal({ open: false, message: null })}
+                        disabled={forwardMutation.isPending}
+                    >
+                        Annuler
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={handleForwardConfirm}
+                        disabled={forwardMutation.isPending}
+                        startIcon={forwardMutation.isPending ? <CircularProgress size={20} /> : <FaShareSquare />}
+                    >
+                        {forwardMutation.isPending ? 'Envoi en cours...' : 'Confirmer le transfert'}
+                    </Button>
+                </DialogActions>
             </Dialog>
 
             {/* Delete Confirmation Modal */}

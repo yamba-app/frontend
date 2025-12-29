@@ -17,6 +17,7 @@ export const useAllBusinessesForMessages = (options = {}) => {
     return useQuery({
         queryKey: ['businesses', 'for-messages'],
         queryFn: async () => {
+            // Fetch all businesses (from business endpoint, not messages)
             const { data } = await axiosPrivate.get('/api/admin/businesses?per_page=all');
             return data; // Contains: { success, data: [...businesses] }
         },
@@ -44,7 +45,7 @@ export const useBusinessMessages = (businessId, filters = {}, options = {}) => {
             const { data } = await axiosPrivate.get(
                 `/api/admin/businesses/${businessId}/messages?${params.toString()}`
             );
-            return data; // Contains: { success, data, statistics }
+            return data; // Contains: { success, data, statistics, pagination }
         },
         enabled: !!businessId && (options.enabled !== false),
         staleTime: 1 * 60 * 1000, // 1 minute
@@ -127,6 +128,30 @@ export const useMessageStatistics = (options = {}) => {
     });
 };
 
+/**
+ * Get all messages across all businesses (Admin)
+ */
+export const useAllMessages = (filters = {}, options = {}) => {
+    const axiosPrivate = useAxiosPrivate();
+    
+    return useQuery({
+        queryKey: ['messages', 'all', filters],
+        queryFn: async () => {
+            const params = new URLSearchParams();
+            Object.keys(filters).forEach(key => {
+                if (filters[key] !== null && filters[key] !== undefined && filters[key] !== '') {
+                    params.append(key, filters[key]);
+                }
+            });
+            const { data } = await axiosPrivate.get(`/api/admin/messages?${params.toString()}`);
+            return data; // Contains: { success, data, pagination }
+        },
+        staleTime: 1 * 60 * 1000,
+        gcTime: 5 * 60 * 1000,
+        ...options,
+    });
+};
+
 // ============================================
 // MUTATION HOOKS
 // ============================================
@@ -143,6 +168,28 @@ export const useSendMessage = (options = {}) => {
             await fetchCsrfToken();
             const { data } = await axiosPrivate.post('/api/messages', messageData);
             return data;
+        },
+        ...options,
+    });
+};
+
+/**
+ * Forward message to business owner (Admin only)
+ */
+export const useForwardMessageToOwner = (options = {}) => {
+    const axiosPrivate = useAxiosPrivate();
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (messageId) => {
+            const { data } = await axiosPrivate.post(`/api/admin/messages/${messageId}/forward`);
+            return data;
+        },
+        onSuccess: (data, messageId) => {
+            // Invalidate queries to refresh data
+            queryClient.invalidateQueries({ queryKey: ['messages'] });
+            queryClient.invalidateQueries({ queryKey: ['message', messageId] });
+            queryClient.invalidateQueries({ queryKey: ['messages', 'statistics'] });
         },
         ...options,
     });

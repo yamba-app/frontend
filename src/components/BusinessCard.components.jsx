@@ -1,4 +1,7 @@
 // src/components/BusinessCard.jsx
+// UPDATED: Only displays data that's safe for public viewing
+// Removed all sensitive fields that are admin-only in the backend
+
 import React, { useState } from 'react';
 import {
     Card,
@@ -25,7 +28,8 @@ import {
     MdTrendingUp as TrendingUpIcon,
     MdImage as ImageIcon,
     MdVideocam as VideoIcon,
-    MdStorefront as StorefrontIcon
+    MdStorefront as StorefrontIcon,
+    MdVerified as VerifiedIcon
 } from 'react-icons/md';
 import { useSendMessage } from '../features/services/Messages.services';
 import useToast from './Toast.components';
@@ -33,6 +37,7 @@ import { InquiryDialog } from '../pages/services/DialogContact.services';
 
 export function BusinessCard({ business, onClick }) {
     const [showInquiryDialog, setShowInquiryDialog] = useState(false);
+    const [isFavorite, setIsFavorite] = useState(false);
     const { showToast, ToastComponent } = useToast();
 
     // Initialize the mutation hook
@@ -72,6 +77,22 @@ export function BusinessCard({ business, onClick }) {
         } catch (error) {
             console.error('Failed to send message:', error);
             throw error;
+        }
+    };
+
+    const handleFavoriteClick = (e) => {
+        handleActionClick(e);
+        setIsFavorite(!isFavorite);
+    };
+
+    const handleShareClick = (e) => {
+        handleActionClick(e);
+        if (navigator.share) {
+            navigator.share({
+                title: `Entreprise à vendre - ${business.businessNumber}`,
+                text: business.description,
+                url: window.location.href
+            }).catch(() => {});
         }
     };
 
@@ -144,6 +165,32 @@ export function BusinessCard({ business, onClick }) {
                     }}
                 />
 
+                {/* Verified Badge - PUBLIC FIELD */}
+                {business.verified && (
+                    <Box
+                        sx={{
+                            position: 'absolute',
+                            top: 16,
+                            right: 16,
+                            zIndex: 3,
+                            bgcolor: 'rgba(25, 118, 210, 0.95)',
+                            color: 'white',
+                            borderRadius: 1,
+                            px: 1.5,
+                            py: 0.5,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                            boxShadow: '0 2px 8px rgba(25, 118, 210, 0.4)'
+                        }}
+                    >
+                        <VerifiedIcon style={{ fontSize: 16 }} />
+                        <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.7rem' }}>
+                            Vérifié
+                        </Typography>
+                    </Box>
+                )}
+
                 {/* Conditional Image Section - Only renders if image exists */}
                 {firstImage ? (
                     <Box sx={{ position: 'relative', overflow: 'hidden' }}>
@@ -151,7 +198,7 @@ export function BusinessCard({ business, onClick }) {
                             component="img"
                             height="220"
                             image={firstImage}
-                            alt={business.name}
+                            alt={`Entreprise ${business.businessNumber}`}
                             sx={{
                                 objectFit: 'cover',
                                 transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -345,7 +392,7 @@ export function BusinessCard({ business, onClick }) {
                                     textShadow: '0 1px 2px rgba(255,255,255,0.5)'
                                 }}
                             >
-                                {business.name}
+                                Entreprise à vendre
                             </Typography>
                             
                             {/* Price Badge for No-Image Cards */}
@@ -408,57 +455,22 @@ export function BusinessCard({ business, onClick }) {
                 )}
 
                 <CardContent sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                    {/* Header Section - Only show name if image exists (otherwise shown in placeholder) */}
+                    {/* Header Section - Business Number Only (No Name) */}
                     <Box sx={{ mb: 2 }}>
-                        {firstImage && (
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
-                                <Typography
-                                    variant="h6"
-                                    component="h3"
-                                    sx={{
-                                        fontWeight: 'bold',
-                                        flex: 1,
-                                        lineHeight: 1.3,
-                                        minHeight: '2.6em',
-                                        display: '-webkit-box',
-                                        WebkitLineClamp: 2,
-                                        WebkitBoxOrient: 'vertical',
-                                        overflow: 'hidden',
-                                        color: 'text.primary'
-                                    }}
-                                >
-                                    {business.name}
-                                </Typography>
-                                <Box sx={{ ml: 1, flexShrink: 0 }}>
-                                    <Chip
-                                        icon={<BusinessIcon style={{ fontSize: 14 }} />}
-                                        label={business.businessNumber}
-                                        size="small"
-                                        variant="outlined"
-                                        color="primary"
-                                        sx={{ fontWeight: 500 }}
-                                    />
-                                </Box>
-                            </Box>
-                        )}
-
-                        {/* Business Number for no-image cards */}
-                        {!firstImage && (
-                            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-                                <Chip
-                                    icon={<BusinessIcon style={{ fontSize: 14 }} />}
-                                    label={`N° ${business.businessNumber}`}
-                                    size="small"
-                                    variant="outlined"
-                                    color="success"
-                                    sx={{ fontWeight: 600 }}
-                                />
-                            </Box>
-                        )}
+                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 1.5 }}>
+                            <Chip
+                                icon={<BusinessIcon style={{ fontSize: 14 }} />}
+                                label={`Réf: ${business.businessNumber}`}
+                                size="medium"
+                                variant="outlined"
+                                color="success"
+                                sx={{ fontWeight: 700, fontSize: '0.9rem' }}
+                            />
+                        </Box>
 
                         {/* Key Details in Grid */}
                         <Stack spacing={1.5} sx={{ mb: 2 }}>
-                            {/* Location */}
+                            {/* Location - PUBLIC FIELD (general location only) */}
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                 <MapPinIcon style={{ marginRight: 10, color: '#2e7d32', fontSize: 19, flexShrink: 0 }} />
                                 <Typography variant="body2" color="text.primary" sx={{ fontSize: '0.9rem', fontWeight: 600 }}>
@@ -466,7 +478,7 @@ export function BusinessCard({ business, onClick }) {
                                 </Typography>
                             </Box>
 
-                            {/* Category */}
+                            {/* Category - PUBLIC FIELD */}
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                 <CategoryIcon style={{ marginRight: 10, color: '#2e7d32', fontSize: 19, flexShrink: 0 }} />
                                 <Typography variant="body2" color="text.primary" sx={{ fontSize: '0.9rem', fontWeight: 600 }}>
@@ -474,7 +486,7 @@ export function BusinessCard({ business, onClick }) {
                                 </Typography>
                             </Box>
 
-                            {/* Year Established & Employees */}
+                            {/* Year Established & Employees - PUBLIC FIELDS */}
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap' }}>
                                 {business.yearEstablished && (
                                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -499,7 +511,7 @@ export function BusinessCard({ business, onClick }) {
 
                     <Divider sx={{ my: 1.5 }} />
 
-                    {/* Description */}
+                    {/* Description - PUBLIC FIELD */}
                     <Typography
                         variant="body2"
                         color="text.secondary"
@@ -517,7 +529,7 @@ export function BusinessCard({ business, onClick }) {
                         {truncateText(business.description)}
                     </Typography>
 
-                    {/* Monthly Revenue */}
+                    {/* Monthly Revenue - PUBLIC FIELD */}
                     {business.monthlyRevenue && (
                         <Box
                             sx={{
@@ -557,8 +569,9 @@ export function BusinessCard({ business, onClick }) {
                             <Box sx={{ display: 'flex', gap: 0.5 }}>
                                 <IconButton
                                     size="small"
+                                    onClick={handleFavoriteClick}
                                     sx={{
-                                        color: 'text.secondary',
+                                        color: isFavorite ? 'error.main' : 'text.secondary',
                                         transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                                         '&:hover': {
                                             color: 'error.main',
@@ -571,6 +584,7 @@ export function BusinessCard({ business, onClick }) {
                                 </IconButton>
                                 <IconButton
                                     size="small"
+                                    onClick={handleShareClick}
                                     sx={{
                                         color: 'text.secondary',
                                         transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',

@@ -1,3 +1,6 @@
+// BusinessDetailPage.jsx
+// UPDATED: Only displays public-safe data according to backend BusinessResource
+
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -12,7 +15,6 @@ import {
     IconButton,
     Breadcrumbs,
     Link,
-    Avatar,
     List,
     ListItem,
     ListItemIcon,
@@ -26,9 +28,6 @@ import {
     FaArrowLeft,
     FaMapMarkerAlt,
     FaCalendarAlt,
-    FaPhone,
-    FaEnvelope,
-    FaUser,
     FaInfoCircle,
     FaShare,
     FaHeart,
@@ -37,9 +36,12 @@ import {
     FaTag,
     FaChartLine,
     FaUsers,
-    FaTools,
     FaBuilding,
-    FaDollarSign
+    FaDollarSign,
+    FaIndustry,
+    FaCheckCircle,
+    FaStar,
+    FaEnvelope
 } from 'react-icons/fa';
 import { useBusinessBySlug } from './services/homes.services';
 import { useSendMessage } from '../features/services/Messages.services';
@@ -163,7 +165,7 @@ export function BusinessDetailPage() {
 
     return (
         <Container maxWidth="xl" sx={{ py: 4 }}>
-            {/* Breadcrumbs */}
+            {/* Breadcrumbs - NO BUSINESS NAME (protected) */}
             <Fade in={true} timeout={600}>
                 <Breadcrumbs 
                     sx={{ 
@@ -192,12 +194,15 @@ export function BusinessDetailPage() {
                         Accueil
                     </Link>
                     <Typography color="success.main" sx={{ fontWeight: 600 }}>
-                        {business.name}
+                        {business.category}
+                    </Typography>
+                    <Typography color="text.primary" sx={{ fontWeight: 600 }}>
+                        Réf: {business.businessNumber}
                     </Typography>
                 </Breadcrumbs>
             </Fade>
 
-            {/* Hero Header Section */}
+            {/* Hero Header Section - NO BUSINESS NAME */}
             <Slide direction="down" in={true} timeout={800}>
                 <Paper 
                     elevation={3} 
@@ -212,6 +217,7 @@ export function BusinessDetailPage() {
                 >
                     <Box display="flex" justifyContent="space-between" alignItems="start" flexWrap="wrap" gap={2}>
                         <Box flex={1}>
+                            {/* Title - Show Category instead of name for privacy */}
                             <Typography 
                                 variant="h3" 
                                 component="h1" 
@@ -223,7 +229,7 @@ export function BusinessDetailPage() {
                                     fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' }
                                 }}
                             >
-                                {business.name}
+                                Entreprise à vendre
                             </Typography>
                             
                             <Box display="flex" alignItems="center" gap={2} mb={3} flexWrap="wrap">
@@ -251,7 +257,7 @@ export function BusinessDetailPage() {
                                 />
                                 <Chip
                                     icon={<FaBuilding />}
-                                    label={`N° ${business.business_number || business.businessNumber}`}
+                                    label={`Réf: ${business.businessNumber}`}
                                     variant="filled"
                                     sx={{ 
                                         bgcolor: 'success.light',
@@ -260,6 +266,20 @@ export function BusinessDetailPage() {
                                         fontSize: '0.9rem'
                                     }}
                                 />
+                                {/* Verified Badge */}
+                                {business.verified && (
+                                    <Chip
+                                        icon={<FaCheckCircle />}
+                                        label="Vérifié"
+                                        variant="filled"
+                                        sx={{ 
+                                            bgcolor: 'primary.main',
+                                            color: 'white',
+                                            fontWeight: 700,
+                                            fontSize: '0.9rem'
+                                        }}
+                                    />
+                                )}
                             </Box>
 
                             <Box 
@@ -285,7 +305,7 @@ export function BusinessDetailPage() {
 
                             <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <FaCalendarAlt />
-                                Publié le {new Date(business.created_at || business.datePosted).toLocaleDateString('fr-FR', {
+                                Publié le {new Date(business.createdAt || business.datePosted).toLocaleDateString('fr-FR', {
                                     day: 'numeric',
                                     month: 'long',
                                     year: 'numeric'
@@ -314,6 +334,15 @@ export function BusinessDetailPage() {
                             </Zoom>
                             <Zoom in={true} timeout={1200}>
                                 <IconButton
+                                    onClick={() => {
+                                        if (navigator.share) {
+                                            navigator.share({
+                                                title: `Entreprise à vendre - ${business.businessNumber}`,
+                                                text: business.description,
+                                                url: window.location.href
+                                            }).catch(() => {});
+                                        }
+                                    }}
                                     sx={{ 
                                         bgcolor: 'background.paper',
                                         boxShadow: 2,
@@ -336,7 +365,7 @@ export function BusinessDetailPage() {
 
             <Grid container spacing={4}>
                 {/* Left Column - Media and Description */}
-                <Grid size={{ xs: 12, md: 8 }}>
+                <Grid size={{md:8,sm:12,xs:12}}>
                     {/* Media Gallery */}
                     {allMedia.length > 0 && (
                         <Fade in={true} timeout={1000}>
@@ -368,7 +397,7 @@ export function BusinessDetailPage() {
                                         <Box
                                             component="img"
                                             src={allMedia[currentMediaIndex]?.url}
-                                            alt={business.name}
+                                            alt={`Entreprise ${business.businessNumber}`}
                                             sx={{
                                                 width: '100%',
                                                 height: '100%',
@@ -466,7 +495,7 @@ export function BusinessDetailPage() {
                                                 <Box
                                                     component="img"
                                                     src={media.url}
-                                                    alt={`${business.name} ${index + 1}`}
+                                                    alt={`Media ${index + 1}`}
                                                     sx={{
                                                         width: '100%',
                                                         height: '100%',
@@ -533,7 +562,7 @@ export function BusinessDetailPage() {
                         </Fade>
                     )}
 
-                    {/* Description */}
+                    {/* Description - PUBLIC FIELD */}
                     <Fade in={true} timeout={1200}>
                         <Paper 
                             elevation={2} 
@@ -567,409 +596,17 @@ export function BusinessDetailPage() {
                                 sx={{ 
                                     lineHeight: 2,
                                     fontSize: '1.05rem',
-                                    color: 'text.primary'
+                                    color: 'text.primary',
+                                    whiteSpace: 'pre-wrap'
                                 }}
                             >
                                 {business.description}
                             </Typography>
-                            {business.additional_info && (
-                                <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.50', borderRadius: 2, borderLeft: '4px solid', borderColor: 'success.main' }}>
-                                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.8 }}>
-                                        {business.additional_info}
-                                    </Typography>
-                                </Box>
-                            )}
                         </Paper>
                     </Fade>
 
-                    {/* Business Details */}
+                    {/* Business Details - PUBLIC FIELDS ONLY */}
                     <Fade in={true} timeout={1400}>
-                        <Paper 
-                            elevation={2} 
-                            sx={{ 
-                                p: 4, 
-                                mb: 4,
-                                borderRadius: 3,
-                                border: '1px solid',
-                                borderColor: 'divider'
-                            }}
-                        >
-                            <Typography 
-                                variant="h5" 
-                                gutterBottom 
-                                sx={{ 
-                                    fontWeight: 700,
-                                    color: 'success.dark',
-                                    mb: 3,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 1
-                                }}
-                            >
-                                <FaBuilding />
-                                Détails de l'entreprise
-                            </Typography>
-                            <Divider sx={{ mb: 3 }} />
-                            
-                            <Grid container spacing={4}>
-                                <Grid size={{ xs: 12, md: 6 }}>
-                                    <List>
-                                        <ListItem sx={{ px: 0 }}>
-                                            <ListItemIcon>
-                                                <Box 
-                                                    sx={{ 
-                                                        bgcolor: 'success.light', 
-                                                        borderRadius: '50%', 
-                                                        p: 1.5,
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center'
-                                                    }}
-                                                >
-                                                    <FaCalendarAlt color="#2e7d32" size={20} />
-                                                </Box>
-                                            </ListItemIcon>
-                                            <ListItemText
-                                                primary={<Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>Année de création</Typography>}
-                                                secondary={<Typography variant="h6" sx={{ fontWeight: 700, color: 'text.primary' }}>{business.year_established || business.yearEstablished}</Typography>}
-                                            />
-                                        </ListItem>
-                                        <Divider sx={{ my: 2 }} />
-                                        <ListItem sx={{ px: 0 }}>
-                                            <ListItemIcon>
-                                                <Box 
-                                                    sx={{ 
-                                                        bgcolor: 'success.light', 
-                                                        borderRadius: '50%', 
-                                                        p: 1.5,
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center'
-                                                    }}
-                                                >
-                                                    <FaUsers color="#2e7d32" size={20} />
-                                                </Box>
-                                            </ListItemIcon>
-                                            <ListItemText
-                                                primary={<Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>Nombre d'employés</Typography>}
-                                                secondary={<Typography variant="h6" sx={{ fontWeight: 700, color: 'text.primary' }}>{business.employees}</Typography>}
-                                            />
-                                        </ListItem>
-                                        <Divider sx={{ my: 2 }} />
-                                        <ListItem sx={{ px: 0 }}>
-                                            <ListItemIcon>
-                                                <Box 
-                                                    sx={{ 
-                                                        bgcolor: 'success.light', 
-                                                        borderRadius: '50%', 
-                                                        p: 1.5,
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center'
-                                                    }}
-                                                >
-                                                    <FaChartLine color="#2e7d32" size={20} />
-                                                </Box>
-                                            </ListItemIcon>
-                                            <ListItemText
-                                                primary={<Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>Chiffre d'affaires mensuel</Typography>}
-                                                secondary={<Typography variant="h6" sx={{ fontWeight: 700, color: 'success.main' }}>{business.monthly_revenue || business.monthlyRevenue ? formatPrice(business.monthly_revenue || business.monthlyRevenue) : 'Non spécifié'}</Typography>}
-                                            />
-                                        </ListItem>
-                                    </List>
-                                </Grid>
-                                <Grid size={{ xs: 12, md: 6 }}>
-                                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, mb: 2 }}>
-                                        ✨ Avantages de cette entreprise
-                                    </Typography>
-                                    <List dense>
-                                        {business.advantages?.map((advantage, index) => (
-                                            <ListItem key={index} sx={{ py: 1 }}>
-                                                <ListItemIcon sx={{ minWidth: 36 }}>
-                                                    <Box
-                                                        sx={{
-                                                            bgcolor: 'success.main',
-                                                            borderRadius: '50%',
-                                                            width: 24,
-                                                            height: 24,
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center'
-                                                        }}
-                                                    >
-                                                        <FaCheck color="white" size={12} />
-                                                    </Box>
-                                                </ListItemIcon>
-                                                <ListItemText 
-                                                    primary={advantage}
-                                                    primaryTypographyProps={{
-                                                        variant: 'body2',
-                                                        sx: { fontWeight: 500 }
-                                                    }}
-                                                />
-                                            </ListItem>
-                                        ))}
-                                    </List>
-                                </Grid>
-                            </Grid>
-                        </Paper>
-                    </Fade>
-
-                    {/* Assets */}
-                    {business.assets && business.assets.length > 0 && (
-                        <Fade in={true} timeout={1600}>
-                            <Paper 
-                                elevation={2} 
-                                sx={{ 
-                                    p: 4,
-                                    borderRadius: 3,
-                                    border: '1px solid',
-                                    borderColor: 'divider'
-                                }}
-                            >
-                                <Typography 
-                                    variant="h5" 
-                                    gutterBottom 
-                                    sx={{ 
-                                        fontWeight: 700,
-                                        color: 'success.dark',
-                                        mb: 3,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 1
-                                    }}
-                                >
-                                    <FaTools />
-                                    Équipements et actifs inclus
-                                </Typography>
-                                <Divider sx={{ mb: 3 }} />
-                                <Box display="flex" flexWrap="wrap" gap={1.5}>
-                                    {business.assets.map((asset, index) => (
-                                        <Chip
-                                            key={index}
-                                            label={asset}
-                                            variant="outlined"
-                                            color="success"
-                                            sx={{
-                                                fontWeight: 600,
-                                                fontSize: '0.9rem',
-                                                py: 2.5,
-                                                '&:hover': {
-                                                    bgcolor: 'success.light',
-                                                    transform: 'translateY(-2px)',
-                                                    boxShadow: 2
-                                                },
-                                                transition: 'all 0.2s ease'
-                                            }}
-                                        />
-                                    ))}
-                                </Box>
-                            </Paper>
-                        </Fade>
-                    )}
-                </Grid>
-
-                {/* Right Column - Contact Info & Quick Facts */}
-                <Grid size={{ xs: 12, md: 4 }}>
-                    {/* Contact Card */}
-                    <Fade in={true} timeout={1000}>
-                        <Paper 
-                            elevation={3} 
-                            sx={{ 
-                                p: 4, 
-                                mb: 4,
-                                borderRadius: 3,
-                                border: '1px solid',
-                                borderColor: 'divider',
-                                background: 'linear-gradient(135deg, #ffffff 0%, #f9f9f9 100%)'
-                            }}
-                        >
-                            <Typography 
-                                variant="h5" 
-                                gutterBottom 
-                                sx={{ 
-                                    fontWeight: 700,
-                                    color: 'success.dark',
-                                    mb: 3
-                                }}
-                            >
-                                📞 Contacter le vendeur
-                            </Typography>
-                            <Divider sx={{ mb: 3 }} />
-
-                            <Box display="flex" alignItems="center" gap={2} mb={3}>
-                                <Avatar 
-                                    sx={{ 
-                                        bgcolor: 'success.main',
-                                        width: 60,
-                                        height: 60,
-                                        boxShadow: 2
-                                    }}
-                                >
-                                    <FaUser size={28} />
-                                </Avatar>
-                                <Box>
-                                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                                        {business.owner?.name || business.contact_name || business.contactName}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                        ✓ Membre actif
-                                    </Typography>
-                                </Box>
-                            </Box>
-
-                            <Divider sx={{ my: 3 }} />
-
-                            <Box mb={3}>
-                                <Box 
-                                    display="flex" 
-                                    alignItems="center" 
-                                    gap={2} 
-                                    mb={2}
-                                    sx={{
-                                        p: 2,
-                                        bgcolor: 'grey.50',
-                                        borderRadius: 2,
-                                        '&:hover': {
-                                            bgcolor: 'grey.100'
-                                        },
-                                        transition: 'background-color 0.2s ease'
-                                    }}
-                                >
-                                    <Box
-                                        sx={{
-                                            bgcolor: 'success.light',
-                                            borderRadius: '50%',
-                                            p: 1.5,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
-                                        }}
-                                    >
-                                        <FaPhone color="#2e7d32" />
-                                    </Box>
-                                    <Typography sx={{ fontWeight: 600 }}>
-                                        {business.owner?.phone || business.contact_phone || business.contactPhone}
-                                    </Typography>
-                                </Box>
-                                <Box 
-                                    display="flex" 
-                                    alignItems="center" 
-                                    gap={2} 
-                                    mb={2}
-                                    sx={{
-                                        p: 2,
-                                        bgcolor: 'grey.50',
-                                        borderRadius: 2,
-                                        '&:hover': {
-                                            bgcolor: 'grey.100'
-                                        },
-                                        transition: 'background-color 0.2s ease'
-                                    }}
-                                >
-                                    <Box
-                                        sx={{
-                                            bgcolor: 'success.light',
-                                            borderRadius: '50%',
-                                            p: 1.5,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
-                                        }}
-                                    >
-                                        <FaEnvelope color="#2e7d32" />
-                                    </Box>
-                                    <Typography sx={{ wordBreak: 'break-word', fontWeight: 500, fontSize: '0.9rem' }}>
-                                        {business.owner?.email || business.contact_email || business.contactEmail}
-                                    </Typography>
-                                </Box>
-                                <Box 
-                                    display="flex" 
-                                    alignItems="center" 
-                                    gap={2}
-                                    sx={{
-                                        p: 2,
-                                        bgcolor: 'grey.50',
-                                        borderRadius: 2,
-                                        '&:hover': {
-                                            bgcolor: 'grey.100'
-                                        },
-                                        transition: 'background-color 0.2s ease'
-                                    }}
-                                >
-                                    <Box
-                                        sx={{
-                                            bgcolor: 'success.light',
-                                            borderRadius: '50%',
-                                            p: 1.5,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
-                                        }}
-                                    >
-                                        <FaMapMarkerAlt color="#2e7d32" />
-                                    </Box>
-                                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                        {business.full_address || business.fullAddress || business.location}
-                                    </Typography>
-                                </Box>
-                            </Box>
-
-                            <Button
-                                fullWidth
-                                variant="contained"
-                                size="large"
-                                onClick={() => setShowInquiryDialog(true)}
-                                sx={{
-                                    background: 'linear-gradient(135deg, #2e7d32 0%, #388e3c 100%)',
-                                    color: 'white',
-                                    mb: 2,
-                                    py: 1.8,
-                                    fontWeight: 700,
-                                    fontSize: '1rem',
-                                    boxShadow: '0 4px 16px rgba(46, 125, 50, 0.3)',
-                                    '&:hover': { 
-                                        background: 'linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%)',
-                                        boxShadow: '0 6px 20px rgba(46, 125, 50, 0.4)',
-                                        transform: 'translateY(-2px)'
-                                    },
-                                    transition: 'all 0.3s ease'
-                                }}
-                            >
-                                ✉️ Envoyer un message
-                            </Button>
-
-                            <Button
-                                fullWidth
-                                variant="outlined"
-                                size="large"
-                                href={`tel:${business.owner?.phone || business.contact_phone || business.contactPhone}`}
-                                sx={{
-                                    borderColor: 'success.main',
-                                    borderWidth: 2,
-                                    color: 'success.main',
-                                    py: 1.8,
-                                    fontWeight: 700,
-                                    fontSize: '1rem',
-                                    '&:hover': {
-                                        borderColor: 'success.dark',
-                                        borderWidth: 2,
-                                        color: 'success.dark',
-                                        bgcolor: 'success.light',
-                                        transform: 'translateY(-2px)',
-                                        boxShadow: 2
-                                    },
-                                    transition: 'all 0.3s ease'
-                                }}
-                            >
-                                <FaPhone style={{ marginRight: 8 }} />
-                                Appeler maintenant
-                            </Button>
-                        </Paper>
-                    </Fade>
-
-                    {/* Quick Info Card */}
-                    <Fade in={true} timeout={1200}>
                         <Paper 
                             elevation={2} 
                             sx={{ 
@@ -980,9 +617,9 @@ export function BusinessDetailPage() {
                             }}
                         >
                             <Typography 
-                                variant="h6" 
-                                gutterBottom
-                                sx={{
+                                variant="h5" 
+                                gutterBottom 
+                                sx={{ 
                                     fontWeight: 700,
                                     color: 'success.dark',
                                     mb: 3,
@@ -991,85 +628,228 @@ export function BusinessDetailPage() {
                                     gap: 1
                                 }}
                             >
-                                <FaInfoCircle />
-                                Informations rapides
+                                <FaIndustry />
+                                Détails de l'entreprise
                             </Typography>
-                            <Divider sx={{ mb: 2 }} />
-                            <List dense>
-                                <ListItem sx={{ px: 0, py: 1.5 }}>
+                            <Divider sx={{ mb: 3 }} />
+                            
+                            <List>
+                                <ListItem>
+                                    <ListItemIcon>
+                                        <FaTag color="#2e7d32" size={22} />
+                                    </ListItemIcon>
                                     <ListItemText
-                                        primary={<Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mb: 0.5 }}>Prix demandé</Typography>}
-                                        secondary={<Typography variant="h6" sx={{ fontWeight: 700, color: 'success.main' }}>{formatPrice(business.price)}</Typography>}
+                                        primary="Catégorie"
+                                        secondary={business.category}
+                                        primaryTypographyProps={{ fontWeight: 600, color: 'text.primary' }}
+                                        secondaryTypographyProps={{ fontSize: '1rem', color: 'text.secondary' }}
                                     />
                                 </ListItem>
-                                <Divider />
-                                <ListItem sx={{ px: 0, py: 1.5 }}>
+
+                                <ListItem>
+                                    <ListItemIcon>
+                                        <FaMapMarkerAlt color="#2e7d32" size={22} />
+                                    </ListItemIcon>
                                     <ListItemText
-                                        primary={<Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mb: 0.5 }}>Catégorie</Typography>}
-                                        secondary={<Typography variant="body1" sx={{ fontWeight: 600 }}>{business.category}</Typography>}
+                                        primary="Localisation"
+                                        secondary={business.location}
+                                        primaryTypographyProps={{ fontWeight: 600, color: 'text.primary' }}
+                                        secondaryTypographyProps={{ fontSize: '1rem', color: 'text.secondary' }}
                                     />
                                 </ListItem>
-                                <Divider />
-                                <ListItem sx={{ px: 0, py: 1.5 }}>
-                                    <ListItemText
-                                        primary={<Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mb: 0.5 }}>Localisation</Typography>}
-                                        secondary={<Typography variant="body1" sx={{ fontWeight: 600 }}>{business.location}</Typography>}
-                                    />
-                                </ListItem>
-                                <Divider />
-                                <ListItem sx={{ px: 0, py: 1.5 }}>
-                                    <ListItemText
-                                        primary={<Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mb: 0.5 }}>CA annuel</Typography>}
-                                        secondary={<Typography variant="body1" sx={{ fontWeight: 600 }}>{business.yearly_revenue || business.yearlyRevenue ? formatPrice(business.yearly_revenue || business.yearlyRevenue) : 'Non spécifié'}</Typography>}
-                                    />
-                                </ListItem>
-                                {business.reasons && (
-                                    <>
-                                        <Divider />
-                                        <ListItem sx={{ px: 0, py: 1.5 }}>
-                                            <ListItemText
-                                                primary={<Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mb: 0.5 }}>Raison de vente</Typography>}
-                                                secondary={<Typography variant="body1" sx={{ fontWeight: 600 }}>{business.reasons}</Typography>}
-                                            />
-                                        </ListItem>
-                                    </>
+
+                                {business.yearEstablished && (
+                                    <ListItem>
+                                        <ListItemIcon>
+                                            <FaCalendarAlt color="#2e7d32" size={22} />
+                                        </ListItemIcon>
+                                        <ListItemText
+                                            primary="Année de création"
+                                            secondary={business.yearEstablished}
+                                            primaryTypographyProps={{ fontWeight: 600, color: 'text.primary' }}
+                                            secondaryTypographyProps={{ fontSize: '1rem', color: 'text.secondary' }}
+                                        />
+                                    </ListItem>
+                                )}
+
+                                {business.employees && (
+                                    <ListItem>
+                                        <ListItemIcon>
+                                            <FaUsers color="#2e7d32" size={22} />
+                                        </ListItemIcon>
+                                        <ListItemText
+                                            primary="Nombre d'employés"
+                                            secondary={`${business.employees} employés`}
+                                            primaryTypographyProps={{ fontWeight: 600, color: 'text.primary' }}
+                                            secondaryTypographyProps={{ fontSize: '1rem', color: 'text.secondary' }}
+                                        />
+                                    </ListItem>
+                                )}
+
+                                {business.monthlyRevenue && (
+                                    <ListItem>
+                                        <ListItemIcon>
+                                            <FaChartLine color="#2e7d32" size={22} />
+                                        </ListItemIcon>
+                                        <ListItemText
+                                            primary="Revenu mensuel estimé"
+                                            secondary={formatPrice(business.monthlyRevenue)}
+                                            primaryTypographyProps={{ fontWeight: 600, color: 'text.primary' }}
+                                            secondaryTypographyProps={{ fontSize: '1rem', color: 'success.dark', fontWeight: 700 }}
+                                        />
+                                    </ListItem>
+                                )}
+
+                                {business.yearlyRevenue && (
+                                    <ListItem>
+                                        <ListItemIcon>
+                                            <FaChartLine color="#2e7d32" size={22} />
+                                        </ListItemIcon>
+                                        <ListItemText
+                                            primary="Revenu annuel estimé"
+                                            secondary={formatPrice(business.yearlyRevenue)}
+                                            primaryTypographyProps={{ fontWeight: 600, color: 'text.primary' }}
+                                            secondaryTypographyProps={{ fontSize: '1rem', color: 'success.dark', fontWeight: 700 }}
+                                        />
+                                    </ListItem>
                                 )}
                             </List>
+
+                            {/* Assets/Advantages if available */}
+                            {(business.assets?.length > 0 || business.advantages?.length > 0) && (
+                                <>
+                                    <Divider sx={{ my: 3 }} />
+                                    
+                                    {business.assets?.length > 0 && (
+                                        <Box sx={{ mb: 3 }}>
+                                            <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: 'success.dark' }}>
+                                                Actifs inclus
+                                            </Typography>
+                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                                {business.assets.map((asset, index) => (
+                                                    <Chip
+                                                        key={index}
+                                                        icon={<FaCheck />}
+                                                        label={asset}
+                                                        color="success"
+                                                        variant="outlined"
+                                                        sx={{ fontWeight: 500 }}
+                                                    />
+                                                ))}
+                                            </Box>
+                                        </Box>
+                                    )}
+
+                                    {business.advantages?.length > 0 && (
+                                        <Box>
+                                            <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: 'success.dark' }}>
+                                                Avantages
+                                            </Typography>
+                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                                {business.advantages.map((advantage, index) => (
+                                                    <Chip
+                                                        key={index}
+                                                        icon={<FaStar />}
+                                                        label={advantage}
+                                                        color="primary"
+                                                        variant="outlined"
+                                                        sx={{ fontWeight: 500 }}
+                                                    />
+                                                ))}
+                                            </Box>
+                                        </Box>
+                                    )}
+                                </>
+                            )}
+                        </Paper>
+                    </Fade>
+                </Grid>
+
+                {/* Right Column - Contact Card */}
+                <Grid size={{md:4,sm:12,xs:12}}>
+                    <Fade in={true} timeout={1600}>
+                        <Paper 
+                            elevation={3} 
+                            sx={{ 
+                                p: 4,
+                                position: 'sticky',
+                                top: 20,
+                                borderRadius: 3,
+                                border: '2px solid',
+                                borderColor: 'success.light',
+                                background: 'linear-gradient(135deg, #ffffff 0%, #f1f8f4 100%)'
+                            }}
+                        >
+                            <Typography 
+                                variant="h5" 
+                                gutterBottom 
+                                sx={{ 
+                                    fontWeight: 700,
+                                    color: 'success.dark',
+                                    mb: 3,
+                                    textAlign: 'center'
+                                }}
+                            >
+                                Intéressé par cette entreprise?
+                            </Typography>
+                            
+                            <Box sx={{ mb: 3, textAlign: 'center' }}>
+                                <Typography variant="h4" sx={{ fontWeight: 800, color: 'success.main', mb: 1 }}>
+                                    {formatPrice(business.price)}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    Prix demandé
+                                </Typography>
+                            </Box>
+
+                            <Divider sx={{ my: 3 }} />
+
+                            <Box sx={{ mb: 3 }}>
+                                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', lineHeight: 1.8, mb: 2 }}>
+                                    Pour obtenir plus d'informations sur cette entreprise, veuillez nous contacter.
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', lineHeight: 1.8, fontStyle: 'italic' }}>
+                                    Les informations de contact du propriétaire seront partagées après vérification.
+                                </Typography>
+                            </Box>
+
+                            <Button
+                                variant="contained"
+                                fullWidth
+                                size="large"
+                                startIcon={<FaEnvelope />}
+                                onClick={() => setShowInquiryDialog(true)}
+                                sx={{
+                                    py: 1.8,
+                                    fontWeight: 700,
+                                    fontSize: '1.1rem',
+                                    background: 'linear-gradient(135deg, #2e7d32 0%, #388e3c 100%)',
+                                    boxShadow: '0 4px 20px rgba(46, 125, 50, 0.4)',
+                                    '&:hover': {
+                                        background: 'linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%)',
+                                        boxShadow: '0 6px 24px rgba(46, 125, 50, 0.5)',
+                                        transform: 'translateY(-2px)'
+                                    },
+                                    transition: 'all 0.3s ease'
+                                }}
+                            >
+                                Demander des informations
+                            </Button>
+
+                            <Box sx={{ mt: 3, p: 2, bgcolor: 'info.light', borderRadius: 2, border: '1px solid', borderColor: 'info.main' }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600, color: 'info.dark', display: 'block', mb: 1 }}>
+                                    ℹ️ Informations protégées
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                                    Pour protéger la confidentialité du vendeur, certaines informations ne sont pas affichées publiquement.
+                                </Typography>
+                            </Box>
                         </Paper>
                     </Fade>
                 </Grid>
             </Grid>
 
-            {/* Back Button */}
-            <Fade in={true} timeout={1800}>
-                <Box sx={{ mt: 6, mb: 2 }}>
-                    <Button
-                        variant="outlined"
-                        onClick={() => navigate('/')}
-                        startIcon={<FaArrowLeft />}
-                        size="large"
-                        sx={{
-                            borderWidth: 2,
-                            borderColor: 'success.main',
-                            color: 'success.main',
-                            fontWeight: 600,
-                            px: 4,
-                            py: 1.5,
-                            '&:hover': {
-                                borderWidth: 2,
-                                borderColor: 'success.dark',
-                                bgcolor: 'success.light',
-                                transform: 'translateX(-4px)',
-                                boxShadow: 2
-                            },
-                            transition: 'all 0.3s ease'
-                        }}
-                    >
-                        Retour aux annonces
-                    </Button>
-                </Box>
-            </Fade>
-
+            {/* Inquiry Dialog */}
             <InquiryDialog
                 open={showInquiryDialog}
                 onClose={() => setShowInquiryDialog(false)}
@@ -1077,7 +857,7 @@ export function BusinessDetailPage() {
                 onSubmit={handleInquirySubmit}
                 isSubmitting={sendMessageMutation.isPending}
             />
-            
+
             {/* Toast Notification */}
             {ToastComponent}
         </Container>

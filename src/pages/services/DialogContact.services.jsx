@@ -1,4 +1,6 @@
 // src/components/InquiryDialog.jsx
+// UPDATED: Only displays public-safe data - business name is HIDDEN
+
 import React, { useState } from 'react';
 import {
     Dialog,
@@ -16,7 +18,8 @@ import {
     InputAdornment,
     CircularProgress,
     Fade,
-    Slide
+    Slide,
+    Chip
 } from '@mui/material';
 import {
     MdClose as CloseIcon,
@@ -28,7 +31,9 @@ import {
     MdBusiness as BusinessIcon,
     MdLocationOn as LocationIcon,
     MdAttachMoney as MoneyIcon,
-    MdCheckCircle as CheckCircleIcon
+    MdCheckCircle as CheckCircleIcon,
+    MdCategory as CategoryIcon,
+    MdVerified as VerifiedIcon
 } from 'react-icons/md';
 import DOMPurify from 'dompurify';
 import { inquiryValidator } from '../../utils/functions/inputValidations.functions';
@@ -41,6 +46,7 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 /**
  * Common Inquiry Dialog Component
  * Reusable dialog for sending inquiries about businesses
+ * SECURITY: Does not display business name (admin-only field)
  */
 export function InquiryDialog({
     open,
@@ -240,7 +246,7 @@ export function InquiryDialog({
 
                 {!submitSuccess && (
                     <>
-                        {/* Business Info Card */}
+                        {/* Business Info Card - NO BUSINESS NAME (PROTECTED) */}
                         <Box
                             sx={{
                                 p: 3,
@@ -262,30 +268,61 @@ export function InquiryDialog({
                                     <BusinessIcon sx={{ fontSize: 36 }} />
                                 </Avatar>
                                 <Box sx={{ flex: 1 }}>
+                                    {/* Title - Category instead of business name */}
                                     <Typography
                                         variant="h6"
                                         sx={{
                                             fontWeight: 700,
-                                            mb: 0.5,
+                                            mb: 1,
                                             color: 'success.dark'
                                         }}
                                     >
-                                        {business.name}
+                                        Entreprise à vendre
                                     </Typography>
-                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 1.5 }}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                            <LocationIcon sx={{ fontSize: 16, color: 'success.main' }} />
-                                            <Typography variant="body2" color="text.secondary">
-                                                {business.location}
-                                            </Typography>
-                                        </Box>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                            <BusinessIcon sx={{ fontSize: 16, color: 'success.main' }} />
-                                            <Typography variant="body2" color="text.secondary">
-                                                {business.business_number || business.businessNumber}
-                                            </Typography>
-                                        </Box>
+                                    
+                                    {/* Business Details - PUBLIC FIELDS ONLY */}
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 2 }}>
+                                        <Chip
+                                            icon={<CategoryIcon style={{ fontSize: 16 }} />}
+                                            label={business.category}
+                                            size="small"
+                                            variant="outlined"
+                                            color="primary"
+                                            sx={{ fontWeight: 600 }}
+                                        />
+                                        <Chip
+                                            icon={<LocationIcon style={{ fontSize: 16 }} />}
+                                            label={business.location}
+                                            size="small"
+                                            variant="outlined"
+                                            color="success"
+                                            sx={{ fontWeight: 600 }}
+                                        />
+                                        <Chip
+                                            icon={<BusinessIcon style={{ fontSize: 16 }} />}
+                                            label={`Réf: ${business.business_number || business.businessNumber}`}
+                                            size="small"
+                                            sx={{ 
+                                                bgcolor: 'success.main',
+                                                color: 'white',
+                                                fontWeight: 700
+                                            }}
+                                        />
+                                        {business.verified && (
+                                            <Chip
+                                                icon={<VerifiedIcon style={{ fontSize: 16 }} />}
+                                                label="Vérifié"
+                                                size="small"
+                                                sx={{ 
+                                                    bgcolor: 'primary.main',
+                                                    color: 'white',
+                                                    fontWeight: 700
+                                                }}
+                                            />
+                                        )}
                                     </Box>
+
+                                    {/* Price Badge */}
                                     <Box
                                         sx={{
                                             display: 'inline-flex',
@@ -327,7 +364,7 @@ export function InquiryDialog({
 
                             <Grid container spacing={2.5}>
                                 {/* Name Field */}
-                                <Grid size={{ xs: 12, sm: 6 }}>
+                               <Grid size={{md:6,sm:12}}>
                                     <InputField
                                         fullWidth
                                         label="Nom complet"
@@ -340,12 +377,11 @@ export function InquiryDialog({
                                         isRequired={true}
                                         disabled={isSubmitting}
                                         prefix={<PersonIcon style={{ color: '#2e7d32' }} />}
-    
                                     />
                                 </Grid>
 
                                 {/* Phone Field */}
-                                <Grid size={{ xs: 12, sm: 6 }}  >
+                                <Grid size={{md:6,sm:12}}>
                                     <InputField
                                         fullWidth
                                         label="Téléphone"
@@ -353,47 +389,39 @@ export function InquiryDialog({
                                         value={formData.sender_phone}
                                         onChange={handleChange}
                                         error={!!errors.sender_phone}
-                                        inputType={'phone'}
-                                    
+                                        inputType="phone"
                                         errorMessage={errors.sender_phone}
                                         placeholder="+226 70 XX XX XX"
                                         isRequired={true}
                                         disabled={isSubmitting}
                                         prefix={<PhoneIcon style={{ color: '#2e7d32' }} />}
-                                       
-                                       
                                     />
                                 </Grid>
 
                                 {/* Email Field */}
-                                <Grid size={{ xs: 12, sm: 12 }}>
+                                <Grid size={{md:12}}>
                                     <InputField
                                         fullWidth
                                         label="Adresse email"
                                         name="sender_email"
                                         type="email"
-                                        placeholder=" Addresse email valide"
+                                        placeholder="Adresse email valide"
                                         value={formData.sender_email}
                                         onChange={handleChange}
                                         error={!!errors.sender_email}
-                                        helperText={errors.sender_email}
+                                        errorMessage={errors.sender_email}
                                         isRequired={true}
                                         disabled={isSubmitting}
                                         prefix={<EmailIcon style={{ color: '#2e7d32' }} />}
-                                       
-                                       
-                            
-                                       
                                     />
                                 </Grid>
 
                                 {/* Message Field */}
-                                <Grid size={{ xs: 12 }}>
+                                <Grid size={{md:12}}>
                                     <TextArea
                                         fullWidth
                                         label="Votre message"
                                         name="message"
-                                    
                                         rows={4}
                                         value={formData.message}
                                         onChange={handleChange}
@@ -401,9 +429,7 @@ export function InquiryDialog({
                                         helperText={errors.message || `${formData.message.length}/2000 caractères`}
                                         isRequired={true}
                                         disabled={isSubmitting}
-                                        placeholder="Bonjour, je suis intéressé par votre entreprise. Pourriez-vous me fournir plus d'informations sur..."
-                                        
-                                       
+                                        placeholder="Bonjour, je suis intéressé par cette entreprise. Pourriez-vous me fournir plus d'informations sur..."
                                     />
                                 </Grid>
                             </Grid>
@@ -419,8 +445,24 @@ export function InquiryDialog({
                                     borderColor: 'info.main'
                                 }}
                             >
-                                <Typography variant="caption" color="text.primary" sx={{ fontWeight: 500 }}>
+                                <Typography variant="caption" color="text.primary" sx={{ fontWeight: 500, display: 'block', lineHeight: 1.6 }}>
                                     🔒 <strong>Confidentialité:</strong> Vos informations seront partagées uniquement avec le propriétaire de cette entreprise pour qu'il puisse vous contacter directement.
+                                </Typography>
+                            </Box>
+
+                            {/* Data Protection Notice */}
+                            <Box
+                                sx={{
+                                    mt: 2,
+                                    p: 2,
+                                    bgcolor: 'warning.light',
+                                    borderRadius: 1.5,
+                                    border: '1px solid',
+                                    borderColor: 'warning.main'
+                                }}
+                            >
+                                <Typography variant="caption" color="text.primary" sx={{ fontWeight: 500, display: 'block', lineHeight: 1.6 }}>
+                                    ℹ️ <strong>Protection des données:</strong> Le nom de l'entreprise et les coordonnées du propriétaire ne sont pas affichés publiquement pour protéger leur confidentialité. Ces informations vous seront communiquées après vérification de votre demande.
                                 </Typography>
                             </Box>
                         </Box>

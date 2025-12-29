@@ -1,5 +1,5 @@
 import { Box, IconButton, Chip, Avatar, Tooltip, Stack } from '@mui/material';
-import { FaEdit, FaTrash, FaEye, FaUserCheck, FaUserTimes, FaUser, FaEnvelope, FaPhone, FaReply } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaUserCheck, FaUserTimes, FaUser, FaEnvelope, FaPhone, FaReply, FaShareSquare } from 'react-icons/fa';
 import { styled } from '@mui/system';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -307,158 +307,216 @@ const formatDate = (date) => {
 
 // Message Columns
 export const MessageColumns = (actions) => [
-  {
-    name: 'Statut',
-    selector: (row) => row.status,
-    sortable: true,
-    width: '130px',
-    cell: (row) => {
-      const status = row.status?.toLowerCase() || 'new';
-      const config = statusConfig[status] || statusConfig.new;
-      
-      return (
-        <Chip
-          label={config.label}
-          size="small"
-          sx={{
-            fontWeight: 700,
-            bgcolor: config.bgColor,
-            color: config.color,
-            border: `1px solid ${config.borderColor}`,
-            fontSize: '12px',
-          }}
-        />
-      );
+    {
+        name: 'Statut',
+        selector: (row) => row.status,
+        sortable: true,
+        width: '130px',
+        cell: (row) => {
+            const status = row.status?.toLowerCase() || 'new';
+            const config = statusConfig[status] || statusConfig.new;
+            
+            return (
+                <Box>
+                    <Chip
+                        label={config.label}
+                        size="small"
+                        sx={{
+                            fontWeight: 700,
+                            bgcolor: config.bgColor,
+                            color: config.color,
+                            border: `1px solid ${config.borderColor}`,
+                            fontSize: '12px',
+                            mb: row.forwarded_to_owner ? 0.5 : 0,
+                        }}
+                    />
+                    {row.forwarded_to_owner && (
+                        <Chip
+                            icon={<FaShareSquare style={{ fontSize: 10 }} />}
+                            label="Transféré"
+                            size="small"
+                            sx={{
+                                fontWeight: 600,
+                                bgcolor: '#e3f2fd',
+                                color: '#1565c0',
+                                border: '1px solid #64b5f6',
+                                fontSize: '10px',
+                                height: '20px',
+                            }}
+                        />
+                    )}
+                </Box>
+            );
+        },
     },
-  },
-  {
-    name: 'Expéditeur',
-    selector: (row) => row.sender_name,
-    sortable: true,
-    minWidth: '220px',
-    cell: (row) => (
-      <Box>
-        <Box 
-          display="flex" 
-          alignItems="center" 
-          gap={1} 
-          sx={{ 
-            fontWeight: row.status === 'new' ? 700 : 600, 
-            color: '#0f172a',
-            mb: 0.5 
-          }}
-        >
-          <FaUser size={12} color="#64748b" />
-          {row.sender_name}
-        </Box>
-        <Box sx={{ fontSize: '12px', color: '#64748b' }}>
-          <FaEnvelope size={10} style={{ marginRight: 4 }} />
-          {row.sender_email}
-        </Box>
-        <Box sx={{ fontSize: '12px', color: '#94a3b8' }}>
-          <FaPhone size={10} style={{ marginRight: 4 }} />
-          {row.sender_phone}
-        </Box>
-      </Box>
-    ),
-  },
-  {
-    name: 'Entreprise',
-    selector: (row) => row.business?.name,
-    sortable: true,
-    minWidth: '200px',
-    cell: (row) => (
-      <Box>
-        <Box sx={{ fontWeight: 600, color: '#0f172a', mb: 0.3 }}>
-          {row.business?.name || '—'}
-        </Box>
-        <Box sx={{ fontSize: '12px', color: '#64748b' }}>
-          N° {row.business?.business_number || '—'}
-        </Box>
-      </Box>
-    ),
-  },
-  {
-    name: 'Message',
-    selector: (row) => row.message,
-    sortable: false,
-    minWidth: '300px',
-    cell: (row) => (
-      <Box
-        sx={{
-          fontSize: '13px',
-          color: '#334155',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          maxWidth: '280px',
-        }}
-        title={row.message}
-      >
-        {row.message}
-      </Box>
-    ),
-  },
-  {
-    name: 'Date de réception',
-    selector: (row) => row.created_at,
-    sortable: true,
-    width: '160px',
-    cell: (row) => (
-      <Box sx={{ color: '#64748b', fontSize: '13px' }}>
-        {formatDate(row.created_at)}
-      </Box>
-    ),
-  },
-  {
-    name: 'Lu le',
-    selector: (row) => row.read_at,
-    sortable: true,
-    width: '160px',
-    cell: (row) => (
-      <Box sx={{ color: '#64748b', fontSize: '13px' }}>
-        {row.read_at ? formatDate(row.read_at) : '—'}
-      </Box>
-    ),
-  },
-  {
-    name: 'Répondu le',
-    selector: (row) => row.replied_at,
-    sortable: true,
-    width: '160px',
-    cell: (row) => (
-      <Box sx={{ color: '#64748b', fontSize: '13px' }}>
-        {row.replied_at ? formatDate(row.replied_at) : '—'}
-      </Box>
-    ),
-  },
-  {
-    name: 'Actions',
-    width: '180px',
-    cell: (row) => (
-      <Stack direction="row" spacing={1}>
-        {actions?.onView && (
-          <Tooltip title="Voir les détails" arrow>
-            <ActionButton color="view" onClick={() => actions.onView(row)} aria-label="view">
-              <FaEye size={14} />
-            </ActionButton>
-          </Tooltip>
-        )}
-        {row.status !== 'replied' && actions?.onMarkAsReplied && (
-          <Tooltip title="Marquer comme répondu" arrow>
-            <ActionButton color="reply" onClick={() => actions.onMarkAsReplied(row)} aria-label="reply">
-              <FaReply size={14} />
-            </ActionButton>
-          </Tooltip>
-        )}
-        {actions?.onDelete && (
-          <Tooltip title="Supprimer" arrow>
-            <ActionButton color="delete" onClick={() => actions.onDelete(row)} aria-label="delete">
-              <FaTrash size={14} />
-            </ActionButton>
-          </Tooltip>
-        )}
-      </Stack>
-    ),
-  },
+    {
+        name: 'Expéditeur',
+        selector: (row) => row.sender_name,
+        sortable: true,
+        minWidth: '220px',
+        cell: (row) => (
+            <Box>
+                <Box 
+                    display="flex" 
+                    alignItems="center" 
+                    gap={1} 
+                    sx={{ 
+                        fontWeight: row.status === 'new' ? 700 : 600, 
+                        color: '#0f172a',
+                        mb: 0.5 
+                    }}
+                >
+                    <FaUser size={12} color="#64748b" />
+                    {row.sender_name}
+                </Box>
+                <Box sx={{ fontSize: '12px', color: '#64748b' }}>
+                    <FaEnvelope size={10} style={{ marginRight: 4 }} />
+                    {row.sender_email}
+                </Box>
+                <Box sx={{ fontSize: '12px', color: '#94a3b8' }}>
+                    <FaPhone size={10} style={{ marginRight: 4 }} />
+                    {row.sender_phone}
+                </Box>
+            </Box>
+        ),
+    },
+    {
+        name: 'Entreprise',
+        selector: (row) => row.business?.name,
+        sortable: true,
+        minWidth: '200px',
+        cell: (row) => (
+            <Box>
+                <Box sx={{ fontWeight: 600, color: '#0f172a', mb: 0.3 }}>
+                    {row.business?.name || '—'}
+                </Box>
+                <Box sx={{ fontSize: '12px', color: '#64748b' }}>
+                    N° {row.business?.business_number || '—'}
+                </Box>
+            </Box>
+        ),
+    },
+    {
+        name: 'Message',
+        selector: (row) => row.message,
+        sortable: false,
+        minWidth: '300px',
+        cell: (row) => (
+            <Box
+                sx={{
+                    fontSize: '13px',
+                    color: '#334155',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    maxWidth: '280px',
+                }}
+                title={row.message}
+            >
+                {row.message}
+            </Box>
+        ),
+    },
+    {
+        name: 'Date de réception',
+        selector: (row) => row.created_at,
+        sortable: true,
+        width: '160px',
+        cell: (row) => (
+            <Box sx={{ color: '#64748b', fontSize: '13px' }}>
+                {formatDate(row.created_at)}
+            </Box>
+        ),
+    },
+    {
+        name: 'Lu le',
+        selector: (row) => row.read_at,
+        sortable: true,
+        width: '160px',
+        cell: (row) => (
+            <Box sx={{ color: '#64748b', fontSize: '13px' }}>
+                {row.read_at ? formatDate(row.read_at) : '—'}
+            </Box>
+        ),
+    },
+    {
+        name: 'Répondu le',
+        selector: (row) => row.replied_at,
+        sortable: true,
+        width: '160px',
+        cell: (row) => (
+            <Box sx={{ color: '#64748b', fontSize: '13px' }}>
+                {row.replied_at ? formatDate(row.replied_at) : '—'}
+            </Box>
+        ),
+    },
+    {
+        name: 'Actions',
+        width: '220px',
+        cell: (row) => (
+            <Stack direction="row" spacing={1}>
+                {actions?.onView && (
+                    <Tooltip title="Voir les détails" arrow>
+                        <ActionButton color="view" onClick={() => actions.onView(row)} aria-label="view">
+                            <FaEye size={14} />
+                        </ActionButton>
+                    </Tooltip>
+                )}
+                
+                {/* NEW: Forward Button - Only show if not already forwarded */}
+                {!row.forwarded_to_owner && actions?.onForward && (
+                    <Tooltip title="Transférer au propriétaire" arrow>
+                        <ActionButton 
+                            color="primary" 
+                            onClick={() => actions.onForward(row)} 
+                            aria-label="forward"
+                            sx={{
+                                bgcolor: '#1976d2',
+                                '&:hover': { bgcolor: '#1565c0' }
+                            }}
+                        >
+                            <FaShareSquare size={14} />
+                        </ActionButton>
+                    </Tooltip>
+                )}
+                
+                {/* Show forwarded indicator instead of button if already forwarded */}
+                {row.forwarded_to_owner && (
+                    <Tooltip title={`Transféré le ${formatDate(row.forwarded_at)}`} arrow>
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: 32,
+                                height: 32,
+                                borderRadius: 1,
+                                bgcolor: '#e3f2fd',
+                                color: '#1565c0',
+                                cursor: 'default',
+                            }}
+                        >
+                            <FaShareSquare size={14} />
+                        </Box>
+                    </Tooltip>
+                )}
+                
+                {row.status !== 'replied' && actions?.onMarkAsReplied && (
+                    <Tooltip title="Marquer comme répondu" arrow>
+                        <ActionButton color="reply" onClick={() => actions.onMarkAsReplied(row)} aria-label="reply">
+                            <FaReply size={14} />
+                        </ActionButton>
+                    </Tooltip>
+                )}
+                
+                {actions?.onDelete && (
+                    <Tooltip title="Supprimer" arrow>
+                        <ActionButton color="delete" onClick={() => actions.onDelete(row)} aria-label="delete">
+                            <FaTrash size={14} />
+                        </ActionButton>
+                    </Tooltip>
+                )}
+            </Stack>
+        ),
+    },
 ];
