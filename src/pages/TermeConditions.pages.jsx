@@ -14,7 +14,8 @@ const TermsAndConditionsPage = () => {
       content: `• Consultation gratuite des annonces publiques
 • Services Premium (10 000 FCFA/mois) : accès aux coordonnées complètes
 • Frais de mise en relation (15 000 FCFA) : contact direct avec les vendeurs
-• Services d'accompagnement via nos partenaires professionnels`
+• Services d'accompagnement via nos partenaires professionnels
+ NB: Les tarifs sont susceptibles d’être révisés en fonction des besoins ou des circonstances.`
     },
     {
       icon: <MdWarning />,
