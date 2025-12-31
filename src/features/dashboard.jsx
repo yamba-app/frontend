@@ -293,9 +293,9 @@ const Dashboard = () => {
 
   const handleExport = async (format) => {
     try {
+      // eslint-disable-next-line no-unused-vars
       const response = await axiosPrivate.get(`api/admin/businesses/export?format=${format}`);
       alert(`Export ${format.toUpperCase()} préparé avec succès`);
-      console.log('Export data:', response.data);
     } catch (error) {
       alert(`Erreur lors de l'export: ${error.message}`);
     }

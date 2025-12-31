@@ -10,6 +10,7 @@ import { fetchCsrfToken } from '../../core/token/csrf.token';
 /**
  * Fetch all businesses for message management dropdown
  * Returns businesses with unread message counts
+ * NEW: Uses dedicated optimized endpoint
  */
 export const useAllBusinessesForMessages = (options = {}) => {
     const axiosPrivate = useAxiosPrivate();
@@ -17,12 +18,13 @@ export const useAllBusinessesForMessages = (options = {}) => {
     return useQuery({
         queryKey: ['businesses', 'for-messages'],
         queryFn: async () => {
-            // Fetch all businesses (from business endpoint, not messages)
-            const { data } = await axiosPrivate.get('/api/admin/businesses?per_page=all');
-            return data; // Contains: { success, data: [...businesses] }
+            // Use the NEW optimized endpoint
+            const { data } = await axiosPrivate.get('/api/admin/businesses/for-messages');
+            return data; // Contains: { success, data: [...businesses with unread_messages_count] }
         },
-        staleTime: 2 * 60 * 1000, // 2 minutes
-        gcTime: 5 * 60 * 1000,
+        staleTime: 30 * 1000, // 30 seconds - refresh more often for real-time feel
+        gcTime: 2 * 60 * 1000, // 2 minutes
+        refetchInterval: 60 * 1000, // Auto-refetch every 60 seconds
         ...options,
     });
 };
@@ -48,7 +50,7 @@ export const useBusinessMessages = (businessId, filters = {}, options = {}) => {
             return data; // Contains: { success, data, statistics, pagination }
         },
         enabled: !!businessId && (options.enabled !== false),
-        staleTime: 1 * 60 * 1000, // 1 minute
+        staleTime: 30 * 1000, // 30 seconds
         gcTime: 5 * 60 * 1000,
         ...options,
     });
@@ -77,6 +79,7 @@ export const useBusinessNewMessageCount = (businessId, options = {}) => {
 
 /**
  * Get total unread messages across all businesses (Admin)
+ * This sums up all unread messages from all businesses
  */
 export const useTotalUnreadMessageCount = (options = {}) => {
     const axiosPrivate = useAxiosPrivate();
@@ -84,11 +87,19 @@ export const useTotalUnreadMessageCount = (options = {}) => {
     return useQuery({
         queryKey: ['messages', 'unread', 'total'],
         queryFn: async () => {
-            const { data } = await axiosPrivate.get('/api/admin/messages/statistics');
-            return data.data?.new_messages || 0;
+            try {
+                // Get statistics which includes new_messages count
+                const { data } = await axiosPrivate.get('/api/admin/messages/statistics');
+                console.log('Message statistics response:', data);
+                return data.data?.new_messages || 0;
+            } catch (error) {
+                console.error('Failed to fetch message count:', error);
+                return 0;
+            }
         },
-        staleTime: 30 * 1000,
-        refetchInterval: 60 * 1000,
+        staleTime: 30 * 1000, // 30 seconds
+        refetchInterval: 60 * 1000, // Auto-refresh every 60 seconds
+        retry: 2, // Retry failed requests
         ...options,
     });
 };
@@ -158,7 +169,6 @@ export const useAllMessages = (filters = {}, options = {}) => {
 
 /**
  * Send message/inquiry (Public - no auth required)
- * Note: Field names match Laravel validation rules
  */
 export const useSendMessage = (options = {}) => {
     const axiosPrivate = useAxiosPrivate();
@@ -190,6 +200,7 @@ export const useForwardMessageToOwner = (options = {}) => {
             queryClient.invalidateQueries({ queryKey: ['messages'] });
             queryClient.invalidateQueries({ queryKey: ['message', messageId] });
             queryClient.invalidateQueries({ queryKey: ['messages', 'statistics'] });
+            queryClient.invalidateQueries({ queryKey: ['businesses', 'for-messages'] }); // Refresh business list
         },
         ...options,
     });
@@ -207,32 +218,11 @@ export const useMarkMessageAsRead = (options = {}) => {
             const { data } = await axiosPrivate.patch(`/api/admin/messages/${messageId}/read`);
             return data;
         },
-        onMutate: async (messageId) => {
-            // Cancel outgoing refetches
-            await queryClient.cancelQueries({ queryKey: ['messages'] });
-            await queryClient.cancelQueries({ queryKey: ['message', messageId] });
-
-            // Snapshot previous values
-            const previousMessage = queryClient.getQueryData(['message', messageId]);
-
-            // Optimistically update message
-            queryClient.setQueryData(['message', messageId], (old) => {
-                if (!old) return old;
-                return { ...old, status: 'read', read_at: new Date().toISOString() };
-            });
-
-            return { previousMessage };
-        },
-        onError: (err, messageId, context) => {
-            // Rollback on error
-            if (context?.previousMessage) {
-                queryClient.setQueryData(['message', messageId], context.previousMessage);
-            }
-        },
         onSuccess: () => {
             // Invalidate to ensure consistency
             queryClient.invalidateQueries({ queryKey: ['messages'] });
             queryClient.invalidateQueries({ queryKey: ['messages', 'statistics'] });
+            queryClient.invalidateQueries({ queryKey: ['businesses', 'for-messages'] }); // Refresh counts
         },
         ...options,
     });
@@ -250,28 +240,10 @@ export const useMarkMessageAsReplied = (options = {}) => {
             const { data } = await axiosPrivate.patch(`/api/admin/messages/${messageId}/replied`);
             return data;
         },
-        onMutate: async (messageId) => {
-            await queryClient.cancelQueries({ queryKey: ['messages'] });
-            await queryClient.cancelQueries({ queryKey: ['message', messageId] });
-
-            const previousMessage = queryClient.getQueryData(['message', messageId]);
-
-            // Optimistically update message
-            queryClient.setQueryData(['message', messageId], (old) => {
-                if (!old) return old;
-                return { ...old, status: 'replied', replied_at: new Date().toISOString() };
-            });
-
-            return { previousMessage };
-        },
-        onError: (err, messageId, context) => {
-            if (context?.previousMessage) {
-                queryClient.setQueryData(['message', messageId], context.previousMessage);
-            }
-        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['messages'] });
             queryClient.invalidateQueries({ queryKey: ['messages', 'statistics'] });
+            queryClient.invalidateQueries({ queryKey: ['businesses', 'for-messages'] }); // Refresh counts
         },
         ...options,
     });
@@ -292,6 +264,7 @@ export const useDeleteMessage = (options = {}) => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['messages'] });
             queryClient.invalidateQueries({ queryKey: ['messages', 'statistics'] });
+            queryClient.invalidateQueries({ queryKey: ['businesses', 'for-messages'] }); // Refresh counts
         },
         ...options,
     });

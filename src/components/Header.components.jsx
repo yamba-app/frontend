@@ -130,6 +130,7 @@ export function Header({ children }) {
   const { data: messageCount = 0 } = useTotalUnreadMessageCount({
     enabled: isAdmin && !isLoading,
   });
+  console.log(messageCount)
 
   const { data: unreadNotifications = [], isLoading: notificationsLoading } = useUnreadNotifications({
     enabled: isAdmin && !isLoading, // FIX: Added enabled flag

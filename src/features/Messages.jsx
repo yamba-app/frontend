@@ -22,24 +22,24 @@ import {
     Alert,
     Divider,
 } from '@mui/material';
-import { 
-    FaEnvelope, 
-    FaPhone, 
-    FaUser, 
-    FaReply, 
-    FaInbox, 
-    FaEnvelopeOpen, 
-    FaCheckCircle, 
+import {
+    FaEnvelope,
+    FaPhone,
+    FaUser,
+    FaReply,
+    FaInbox,
+    FaEnvelopeOpen,
+    FaCheckCircle,
     FaBuilding,
     FaShareSquare,
     FaExclamationTriangle
 } from 'react-icons/fa';
 import useToast from '../components/Toast.components';
 import { DeleteConfirmationModal } from '../components/Modal.components';
-import { 
-    useBusinessMessages, 
-    useMarkMessageAsRead, 
-    useMarkMessageAsReplied, 
+import {
+    useBusinessMessages,
+    useMarkMessageAsRead,
+    useMarkMessageAsReplied,
     useDeleteMessage,
     useAllBusinessesForMessages,
     useForwardMessageToOwner  // NEW IMPORT
@@ -53,7 +53,7 @@ const MessagesPage = () => {
     const { showToast, ToastComponent } = useToast();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedBusinessId, setSelectedBusinessId] = useState('');
-    
+
     // Filter states
     const [filters, setFilters] = useState({
         status: '',
@@ -65,12 +65,23 @@ const MessagesPage = () => {
     const [forwardModal, setForwardModal] = useState({ open: false, message: null }); // NEW
 
     // Fetch all businesses for dropdown
-    const { data: businessesData, isLoading: businessesLoading } = useAllBusinessesForMessages();
-    const businesses = businessesData?.data || [];
+    // ✅ Fetch all businesses with unread counts from NEW OPTIMIZED ENDPOINT
+    const { data: businessesData, isLoading: businessesLoading, refetch: refetchBusinesses } = useAllBusinessesForMessages();
+    
+    // ✅ Extract businesses array - handles both response formats
+    const businesses = Array.isArray(businessesData?.data) 
+        ? businessesData.data 
+        : Array.isArray(businessesData) 
+        ? businessesData 
+        : [];
 
-    // Calculate total unread messages across all businesses
+   // ✅ Calculate total unread messages across all businesses
+    // Handle both snake_case and camelCase property names
     const totalUnreadMessages = businesses.reduce((sum, business) => {
-        return sum + (business.unread_messages_count || 0);
+        const unreadCount = business.unread_messages_count || 
+                           business.unreadMessagesCount || 
+                           0;
+        return sum + unreadCount;
     }, 0);
 
     // Build filters for API
@@ -79,63 +90,64 @@ const MessagesPage = () => {
         per_page: 20,
     };
 
-    // Fetch messages (only when business is selected)
+      // ✅ Fetch messages for selected business
     const { data: messagesData, isLoading: messagesLoading, refetch } = useBusinessMessages(
-        selectedBusinessId, 
+        selectedBusinessId,
         apiFilters,
         { enabled: !!selectedBusinessId }
     );
-    
-    
+
     // Mutations
-    const markAsReadMutation = useMarkMessageAsRead({
+     const markAsReadMutation = useMarkMessageAsRead({
         onSuccess: () => {
             showToast({ title: 'Succès', description: 'Message marqué comme lu', status: 'success' });
-            refetch();
+            refetch(); // Refetch messages
+            refetchBusinesses(); // ✅ IMPORTANT: Refetch businesses to update counts
         },
         onError: () => {
             showToast({ title: 'Erreur', description: 'Impossible de marquer le message comme lu', status: 'error' });
         }
     });
 
-    const markAsRepliedMutation = useMarkMessageAsReplied({
+ const markAsRepliedMutation = useMarkMessageAsReplied({
         onSuccess: () => {
             showToast({ title: 'Succès', description: 'Message marqué comme répondu', status: 'success' });
             refetch();
+            refetchBusinesses(); // ✅ Update counts
         },
         onError: () => {
             showToast({ title: 'Erreur', description: 'Impossible de marquer le message comme répondu', status: 'error' });
         }
     });
-
     const deleteMutation = useDeleteMessage({
         onSuccess: () => {
             showToast({ title: 'Succès', description: 'Message supprimé avec succès', status: 'success' });
             setDeleteModal({ open: false, message: null });
             refetch();
+            refetchBusinesses(); // ✅ Update counts
         },
         onError: () => {
             showToast({ title: 'Erreur', description: 'Impossible de supprimer le message', status: 'error' });
         }
     });
 
-    // NEW: Forward mutation
-    const forwardMutation = useForwardMessageToOwner({
+     const forwardMutation = useForwardMessageToOwner({
         onSuccess: () => {
-            showToast({ 
-                title: 'Succès', 
-                description: 'Message transféré au propriétaire avec succès', 
-                status: 'success' 
+            showToast({
+                title: 'Succès',
+                description: 'Message transféré au propriétaire avec succès',
+                status: 'success'
             });
             setForwardModal({ open: false, message: null });
             refetch();
+            refetchBusinesses(); // ✅ Update counts
         },
         onError: (error) => {
             const errorMessage = error.response?.data?.message || 'Impossible de transférer le message';
-            showToast({ 
-                title: 'Erreur', 
-                description: errorMessage, 
-                status: 'error' 
+            showToast({
+                title: 'Erreur',
+                description: errorMessage,
+                status: 'error'
             });
         }
     });
@@ -145,7 +157,7 @@ const MessagesPage = () => {
     const statistics = messagesData?.statistics || { total: 0, new: 0, read: 0, replied: 0 };
 
     // Filter messages by search query
-    const filteredMessages = messages?.filter(msg => 
+    const filteredMessages = messages?.filter(msg =>
         msg.sender_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         msg.sender_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         msg.message?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -172,7 +184,7 @@ const MessagesPage = () => {
 
     const handleViewClick = async (row) => {
         setViewModal({ open: true, message: row });
-        
+
         // Mark as read if it's new
         if (row.status === 'new') {
             await markAsReadMutation.mutateAsync(row.id);
@@ -235,7 +247,9 @@ const MessagesPage = () => {
     ];
 
     // Get selected business details
+    // ✅ Get selected business details - handles both property formats
     const selectedBusiness = businesses.find(b => b.id === selectedBusinessId);
+    
 
     return (
         <Box sx={{ p: { xs: 2, md: 4 } }}>
@@ -247,8 +261,8 @@ const MessagesPage = () => {
                         Messagerie
                     </Typography>
                     {totalUnreadMessages > 0 && (
-                        <Badge 
-                            badgeContent={totalUnreadMessages} 
+                        <Badge
+                            badgeContent={totalUnreadMessages}
                             color="error"
                             max={99}
                             sx={{
@@ -279,7 +293,7 @@ const MessagesPage = () => {
                                 Entreprise:
                             </Typography>
                         </Box>
-                        
+
                         <FormControl fullWidth>
                             <InputLabel id="business-select-label">Sélectionner une entreprise</InputLabel>
                             <Select
@@ -293,28 +307,41 @@ const MessagesPage = () => {
                                 <MenuItem value="">
                                     <em>-- Sélectionner une entreprise --</em>
                                 </MenuItem>
-                                {businesses.map((business) => (
-                                    <MenuItem key={business.id} value={business.id}>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                                            <Box sx={{ flex: 1 }}>
-                                                <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                                                    {business.name}
-                                                </Typography>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    N° {business.business_number} • {business.category}
-                                                </Typography>
+                                {businesses.map((business) => {
+
+                                    // Get unread count - handle both possible property names
+                                    const unreadCount = business.unread_messages_count ||
+                                        business.unreadMessagesCount ||
+                                        0;
+
+                                    return (
+                                        <MenuItem key={business.id} value={business.id}>
+                                            <Box sx={{
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                width: '100%',
+                                                alignItems: 'center'
+                                            }}>
+                                                <Box sx={{ flex: 1 }}>
+                                                    <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                                                        {business.name}
+                                                    </Typography>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        N° {business.business_number} • {business.category}
+                                                    </Typography>
+                                                </Box>
+                                                {unreadCount > 0 && (
+                                                    <Badge
+                                                        badgeContent={unreadCount}
+                                                        color="error"
+                                                        max={99}
+                                                        sx={{ ml: 2 }}
+                                                    />
+                                                )}
                                             </Box>
-                                            {business.unread_messages_count > 0 && (
-                                                <Badge 
-                                                    badgeContent={business.unread_messages_count} 
-                                                    color="error"
-                                                    max={99}
-                                                    sx={{ ml: 2 }}
-                                                />
-                                            )}
-                                        </Box>
-                                    </MenuItem>
-                                ))}
+                                        </MenuItem>
+                                    );
+                                })}
                             </Select>
                         </FormControl>
 
@@ -326,26 +353,29 @@ const MessagesPage = () => {
                     {selectedBusiness && (
                         <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(46, 125, 50, 0.05)', borderRadius: 2 }}>
                             <Grid container spacing={2}>
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ md: 6, sm: 12 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Contact: {selectedBusiness.contact_name || '—'}
                                     </Typography>
                                 </Grid>
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ md: 6, sm: 12 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         Email: {selectedBusiness.contact_email || '—'}
                                     </Typography>
                                 </Grid>
-                                {selectedBusiness.unread_messages_count > 0 && (
-                                    <Grid item xs={12}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            <FaEnvelope color="#f44336" />
-                                            <Typography variant="body2" color="error.main" sx={{ fontWeight: 600 }}>
-                                                {selectedBusiness.unread_messages_count} message{selectedBusiness.unread_messages_count > 1 ? 's' : ''} non lu{selectedBusiness.unread_messages_count > 1 ? 's' : ''}
-                                            </Typography>
-                                        </Box>
-                                    </Grid>
-                                )}
+                                {(selectedBusiness.unread_messages_count > 0 ||
+                                    selectedBusiness.unreadMessagesCount > 0) && (
+                                        <Grid size={{ xs: 12 }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                <FaEnvelope color="#f44336" />
+                                                <Typography variant="body2" color="error.main" sx={{ fontWeight: 600 }}>
+                                                    {selectedBusiness.unread_messages_count || selectedBusiness.unreadMessagesCount}
+                                                    {' '}message{(selectedBusiness.unread_messages_count || selectedBusiness.unreadMessagesCount) > 1 ? 's' : ''}
+                                                    {' '}non lu{(selectedBusiness.unread_messages_count || selectedBusiness.unreadMessagesCount) > 1 ? 's' : ''}
+                                                </Typography>
+                                            </Box>
+                                        </Grid>
+                                    )}
                             </Grid>
                         </Box>
                     )}
@@ -357,7 +387,7 @@ const MessagesPage = () => {
                 <>
                     {/* Statistics Cards */}
                     <Grid container spacing={3} sx={{ mb: 4 }}>
-                        <Grid item xs={12} sm={6} md={3}>
+                        <Grid size={{ md: 3, sm: 6, xs: 12 }}>
                             <Card>
                                 <CardContent>
                                     <Box display="flex" alignItems="center" justifyContent="space-between">
@@ -375,7 +405,7 @@ const MessagesPage = () => {
                             </Card>
                         </Grid>
 
-                        <Grid item xs={12} sm={6} md={3}>
+                        <Grid size={{ md: 3, sm: 6, xs: 12 }}>
                             <Card sx={{ bgcolor: '#ffebee' }}>
                                 <CardContent>
                                     <Box display="flex" alignItems="center" justifyContent="space-between">
@@ -393,7 +423,7 @@ const MessagesPage = () => {
                             </Card>
                         </Grid>
 
-                        <Grid item xs={12} sm={6} md={3}>
+                        <Grid size={{ md: 3, sm: 6, xs: 12 }}>
                             <Card sx={{ bgcolor: '#fff3e0' }}>
                                 <CardContent>
                                     <Box display="flex" alignItems="center" justifyContent="space-between">
@@ -411,7 +441,7 @@ const MessagesPage = () => {
                             </Card>
                         </Grid>
 
-                        <Grid item xs={12} sm={6} md={3}>
+                        <Grid size={{ md: 3, sm: 6, xs: 12 }}>
                             <Card sx={{ bgcolor: '#e8f5e9' }}>
                                 <CardContent>
                                     <Box display="flex" alignItems="center" justifyContent="space-between">
@@ -451,7 +481,7 @@ const MessagesPage = () => {
                                     Aucun message trouvé
                                 </Typography>
                                 <Typography variant="body2">
-                                    {filters.status 
+                                    {filters.status
                                         ? 'Aucun message trouvé avec les filtres appliqués'
                                         : 'Aucun message reçu pour cette entreprise'}
                                 </Typography>
@@ -472,7 +502,7 @@ const MessagesPage = () => {
                         </Typography>
                         {totalUnreadMessages > 0 && (
                             <Box sx={{ mt: 3 }}>
-                                <Chip 
+                                <Chip
                                     icon={<FaEnvelope />}
                                     label={`${totalUnreadMessages} message${totalUnreadMessages > 1 ? 's' : ''} non lu${totalUnreadMessages > 1 ? 's' : ''} au total`}
                                     color="error"
@@ -499,18 +529,18 @@ const MessagesPage = () => {
                                 <Box sx={{ display: 'flex', gap: 1 }}>
                                     <Chip
                                         label={
-                                            viewModal.message.status === 'new' 
-                                                ? 'Nouveau' 
-                                                : viewModal.message.status === 'read' 
-                                                ? 'Lu' 
-                                                : 'Répondu'
+                                            viewModal.message.status === 'new'
+                                                ? 'Nouveau'
+                                                : viewModal.message.status === 'read'
+                                                    ? 'Lu'
+                                                    : 'Répondu'
                                         }
                                         color={
-                                            viewModal.message.status === 'new' 
-                                                ? 'error' 
-                                                : viewModal.message.status === 'read' 
-                                                ? 'warning' 
-                                                : 'success'
+                                            viewModal.message.status === 'new'
+                                                ? 'error'
+                                                : viewModal.message.status === 'read'
+                                                    ? 'warning'
+                                                    : 'success'
                                         }
                                         size="small"
                                     />
@@ -527,7 +557,7 @@ const MessagesPage = () => {
                         </DialogTitle>
                         <DialogContent dividers>
                             <Grid container spacing={3}>
-                                <Grid size={{xs:12}}>
+                                <Grid size={{ xs: 12 }}>
                                     <Paper elevation={0} sx={{ p: 2, bgcolor: 'grey.50' }}>
                                         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                                             <FaUser style={{ marginRight: 8 }} />
@@ -549,7 +579,7 @@ const MessagesPage = () => {
                                     </Paper>
                                 </Grid>
 
-                                <Grid size={{xs:12}}>
+                                <Grid size={{ xs: 12 }}>
                                     <Paper elevation={0} sx={{ p: 2, bgcolor: 'grey.50' }}>
                                         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                                             Entreprise concernée
@@ -563,7 +593,7 @@ const MessagesPage = () => {
                                     </Paper>
                                 </Grid>
 
-                               <Grid size={{xs:12}}>
+                                <Grid size={{ xs: 12 }}>
                                     <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                                         Message
                                     </Typography>
@@ -574,7 +604,7 @@ const MessagesPage = () => {
                                     </Paper>
                                 </Grid>
 
-                                <Grid size={{xs:12,md:4}}>
+                                <Grid size={{ xs: 12, md: 4 }}>
                                     <Typography variant="caption" color="text.secondary">
                                         Date d'envoi
                                     </Typography>
@@ -584,7 +614,7 @@ const MessagesPage = () => {
                                 </Grid>
 
                                 {viewModal.message.read_at && (
-                                    <Grid size={{xs:12,md:4}}>
+                                    <Grid size={{ xs: 12, md: 4 }}>
                                         <Typography variant="caption" color="text.secondary">
                                             Lu le
                                         </Typography>
@@ -595,7 +625,7 @@ const MessagesPage = () => {
                                 )}
 
                                 {viewModal.message.replied_at && (
-                                    <Grid size={{xs:12,md:4}}>
+                                    <Grid size={{ xs: 12, md: 4 }}>
                                         <Typography variant="caption" color="text.secondary">
                                             Répondu le
                                         </Typography>
@@ -606,7 +636,7 @@ const MessagesPage = () => {
                                 )}
 
                                 {viewModal.message.forwarded_at && (
-                                    <Grid size={{md:12}}>
+                                    <Grid size={{ md: 12 }}>
                                         <Alert severity="info" icon={<FaShareSquare />}>
                                             Ce message a été transféré au propriétaire le{' '}
                                             <strong>{formatDate(viewModal.message.forwarded_at)}</strong>
@@ -722,7 +752,7 @@ const MessagesPage = () => {
                     )}
                 </DialogContent>
                 <DialogActions sx={{ p: 2, bgcolor: 'grey.50' }}>
-                    <Button 
+                    <Button
                         onClick={() => setForwardModal({ open: false, message: null })}
                         disabled={forwardMutation.isPending}
                     >
